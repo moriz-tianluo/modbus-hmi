@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <data key="LG_AppName" value="自定义外置准星"/>
+    <data key="LG_title" value="登录"/>
+    <data key="LG_username" value="用户名"/>
+    <data key="LG_password" value="密码"/>  
+    <data key="LG_login" value="登录"/>
+    <data key="LG_cancel" value="取消"/>
+    <data key="LG_register" value="确定"/>
+    <data key="LG_register_confirm" value="确认注册"/>
+    <data key="LG_quit" value="退出"/>
+    <data key="LG_config" value="配置"/>
+   </root>
