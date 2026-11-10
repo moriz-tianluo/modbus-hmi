@@ -120,4 +120,36 @@
     <data key="LG_statusbar_exception" value="Exception 0"/>
     <data key="LG_statusbar_crcErr" value="CRC errors 0"/>
     <data key="LG_statusbar_recordInfo" value="12,477 rows recorded"/>
+    <data key="LG_statusbar_serialNotOpen" value="Serial port not open, cannot send data"/>
+    <data key="LG_statusbar_noPortNameSpecified" value="No serial port name specified"/>
+    <data key="LG_modbus_noError" value="No error"/>
+    <data key="LG_modbus_invalidFrame" value="Invalid response frame"/>
+    <data key="LG_modbus_crcError" value="CRC check failed"/>
+    <data key="LG_modbus_slaveMismatch" value="Slave address mismatch"/>
+    <data key="LG_modbus_functionMismatch" value="Function code mismatch"/>
+    <data key="LG_modbus_byteCountMismatch" value="Byte count mismatch"/>
+    <data key="LG_modbus_illegalQuantity" value="Requested quantity out of range"/>
+    <data key="LG_modbus_exception" value="Slave returned an exception"/>
+    <data key="LG_modbus_timeout" value="Response timeout"/>
+    <data key="LG_modbus_serialError" value="Serial port error"/>
+    <data key="LG_modbus_busy" value="Previous request not finished"/>
+    <data key="LG_modbus_unknownError" value="Unknown error"/>
+    <data key="LG_modbus_serialNotOpen" value="Serial port not open, cannot send request"/>
+    <data key="LG_modbus_serialInterrupted" value="Serial port closed, request aborted"/>
+    <data key="LG_modbus_sendFailed" value="Failed to send request"/>
+    <data key="LG_modbus_exc_illegalFunction" value="Illegal function"/>
+    <data key="LG_modbus_exc_illegalAddress" value="Illegal data address"/>
+    <data key="LG_modbus_exc_illegalValue" value="Illegal data value"/>
+    <data key="LG_modbus_exc_slaveFault" value="Slave device failure"/>
+    <data key="LG_modbus_exc_confirm" value="Acknowledge, processing required"/>
+    <data key="LG_modbus_exc_slaveBusy" value="Slave device busy"/>
+    <data key="LG_modbus_exc_parityError" value="Memory parity error"/>
+    <data key="LG_modbus_exc_gatewayPath" value="Gateway path unavailable"/>
+    <data key="LG_modbus_exc_gatewayTarget" value="Gateway target failed to respond"/>
+    <data key="LG_modbus_exc_unknown" value="Unknown exception code"/>
+    <data key="LG_channel_jsonOpenFailed" value="Failed to open config file"/>
+    <data key="LG_channel_jsonSaveFailed" value="Failed to write config file"/>
+    <data key="LG_channel_jsonParseError" value="JSON parse failed"/>
+    <data key="LG_channel_jsonInvalidConfig" value="Invalid config file format"/>
+    <data key="LG_channel_addrNotContiguous" value="Enabled channel register addresses must be contiguous and unique"/>
 </root>

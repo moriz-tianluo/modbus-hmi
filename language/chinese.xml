@@ -120,4 +120,36 @@
     <data key="LG_statusbar_exception" value="异常 0"/>
     <data key="LG_statusbar_crcErr" value="CRC 错 0"/>
     <data key="LG_statusbar_recordInfo" value="记录 12,477 条"/>
+    <data key="LG_statusbar_serialNotOpen" value="串口未打开，无法发送数据"/>
+    <data key="LG_statusbar_noPortNameSpecified" value="未指定串口名称"/>
+    <data key="LG_modbus_noError" value="无错误"/>
+    <data key="LG_modbus_invalidFrame" value="应答帧格式非法"/>
+    <data key="LG_modbus_crcError" value="CRC 校验失败"/>
+    <data key="LG_modbus_slaveMismatch" value="从站地址不匹配"/>
+    <data key="LG_modbus_functionMismatch" value="功能码不匹配"/>
+    <data key="LG_modbus_byteCountMismatch" value="字节数与声明不一致"/>
+    <data key="LG_modbus_illegalQuantity" value="请求数量超出协议允许范围"/>
+    <data key="LG_modbus_exception" value="从站返回异常码"/>
+    <data key="LG_modbus_timeout" value="等待应答超时"/>
+    <data key="LG_modbus_serialError" value="串口通信异常"/>
+    <data key="LG_modbus_busy" value="上一次请求尚未完成"/>
+    <data key="LG_modbus_unknownError" value="未知错误"/>
+    <data key="LG_modbus_serialNotOpen" value="串口未打开，无法发起请求"/>
+    <data key="LG_modbus_serialInterrupted" value="串口已关闭，请求中断"/>
+    <data key="LG_modbus_sendFailed" value="请求发送失败"/>
+    <data key="LG_modbus_exc_illegalFunction" value="非法功能码"/>
+    <data key="LG_modbus_exc_illegalAddress" value="非法数据地址"/>
+    <data key="LG_modbus_exc_illegalValue" value="非法数据值"/>
+    <data key="LG_modbus_exc_slaveFault" value="从站设备故障"/>
+    <data key="LG_modbus_exc_confirm" value="确认，需等待处理完成"/>
+    <data key="LG_modbus_exc_slaveBusy" value="从站设备忙"/>
+    <data key="LG_modbus_exc_parityError" value="存储奇偶校验错"/>
+    <data key="LG_modbus_exc_gatewayPath" value="网关路径不可用"/>
+    <data key="LG_modbus_exc_gatewayTarget" value="网关目标设备无响应"/>
+    <data key="LG_modbus_exc_unknown" value="未知异常码"/>
+    <data key="LG_channel_jsonOpenFailed" value="无法打开配置文件"/>
+    <data key="LG_channel_jsonSaveFailed" value="无法写入配置文件"/>
+    <data key="LG_channel_jsonParseError" value="JSON 解析失败"/>
+    <data key="LG_channel_jsonInvalidConfig" value="配置文件格式不正确"/>
+    <data key="LG_channel_addrNotContiguous" value="启用通道的寄存器地址必须连续且不重复"/>
 </root>

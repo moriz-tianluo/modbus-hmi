@@ -2,7 +2,13 @@ cmake_minimum_required(VERSION 3.19)
 set(PROJECT_NAME "modbus-hmi")
 project(${PROJECT_NAME} LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml Charts)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml Charts sql serialport PrintSupport)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 qt_standard_project_setup()
 
@@ -26,6 +32,13 @@ set(SOURCE_FILES
     src/component/collectionstatisticswodget.cpp
     src/component/alarmandfaultwidget.cpp
     src/component/datasavewidget.cpp
+    3rdparty/QCustomPlot/qcustomplot.cpp
+    src/common/projectconfig.cpp
+    src/common/serialworker.cpp
+    src/common/modbusrtu.cpp
+    src/common/channelmodel.cpp
+    src/common/serialporthelper.cpp
+    src/common/modbuspoller.cpp
 )
 
 set(HEADER_FILES
@@ -48,6 +61,13 @@ set(HEADER_FILES
     include/component/collectionstatisticswodget.h
     include/component/alarmandfaultwidget.h
     include/component/datasavewidget.h
+    3rdparty/QCustomPlot/qcustomplot.h
+    include/common/projectconfig.h
+    include/common/serialworker.h
+    include/common/modbusrtu.h
+    include/common/channelmodel.h
+    include/common/serialporthelper.h
+    include/common/modbuspoller.h
 )
 
 set(UI_FILES
@@ -77,6 +97,13 @@ qt_add_executable(${PROJECT_NAME}
     ${RESOURCES}
 )
 
+
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     AUTOUIC_SEARCH_PATHS
         "${PROJECT_SOURCE_DIR}/forms;${PROJECT_SOURCE_DIR}/forms/component"
@@ -88,6 +115,7 @@ target_include_directories(${PROJECT_NAME}
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/base
         ${PROJECT_SOURCE_DIR}/include/component
+        ${PROJECT_SOURCE_DIR}/include/common
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -96,6 +124,9 @@ target_link_libraries(${PROJECT_NAME}
         Qt::Widgets
         Qt::Xml
         Qt::Charts
+        Qt::SerialPort
+        Qt::Sql
+        Qt::PrintSupport
 )
 
 include(GNUInstallDirs)
