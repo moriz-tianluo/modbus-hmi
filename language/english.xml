@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<root>
+    <data key="LG_AppName" value="Custom Crosshair"/>
+    <data key="LG_title" value="Sign In"/>
+    <data key="LG_username" value="Username"/>
+    <data key="LG_password" value="Password"/>
+    <data key="LG_login" value="Sign In"/>
+    <data key="LG_cancel" value="Cancel"/>
+    <data key="LG_register" value="OK"/>
+    <data key="LG_register_confirm" value="Confirm Registration"/>
+    <data key="LG_quit" value="Exit"/>
+    <data key="LG_config" value="Configuration"/>
+    <data key="LG_appTitle" value="Modbus HMI  ·  Industrial Data Acquisition &amp; Monitoring"/>
+    <data key="LG_appVersion" value="modbus-hmi v0.9"/>
+    <data key="LG_menu_file" value="File"/>
+    <data key="LG_menu_edit" value="Edit"/>
+    <data key="LG_menu_device" value="Device"/>
+    <data key="LG_menu_view" value="View"/>
+    <data key="LG_menu_tools" value="Tools"/>
+    <data key="LG_menu_help" value="Help"/>
+    <data key="LG_tool_port" value="Port"/>
+    <data key="LG_tool_refresh" value="Refresh"/>
+    <data key="LG_tool_baud" value="Baud Rate"/>
+    <data key="LG_tool_frame" value="Frame Format"/>
+    <data key="LG_tool_slave" value="Slave"/>
+    <data key="LG_tool_period" value="Period"/>
+    <data key="LG_tool_openSerial" value="Open Port"/>
+    <data key="LG_tool_startCollect" value="Start Acquisition"/>
+    <data key="LG_tool_pauseCurve" value="Pause Curve"/>
+    <data key="LG_tool_exportCsv" value="Export CSV"/>
+    <data key="LG_tool_screenshot" value="Screenshot"/>
+    <data key="LG_tool_statusRunning" value="Connected · Acquisition Running"/>
+    <data key="LG_card_serialSet" value="Serial Settings"/>
+    <data key="LG_serial_port" value="Port"/>
+    <data key="LG_serial_baud" value="Baud Rate"/>
+    <data key="LG_serial_frame" value="Frame Format"/>
+    <data key="LG_serial_frameTip" value="8 data bits · No parity · 1 stop bit"/>
+    <data key="LG_serial_timeout" value="Timeout"/>
+    <data key="LG_serial_retry" value="Retries"/>
+    <data key="LG_card_modbusSet" value="Modbus Settings"/>
+    <data key="LG_modbus_funcCode" value="Function Code"/>
+    <data key="LG_modbus_startAddr" value="Start Address"/>
+    <data key="LG_modbus_quantity" value="Quantity"/>
+    <data key="LG_modbus_tip" value="Slave 1 · 3.5 char frame gap · CRC16"/>
+    <data key="LG_card_channelConfig" value="Channel Configuration"/>
+    <data key="LG_channel_selectAll" value="Select All"/>
+    <data key="LG_table_channel" value="Channel"/>
+    <data key="LG_table_addr" value="Address"/>
+    <data key="LG_table_curValue" value="Value"/>
+    <data key="LG_ch_temp" value="Temperature"/>
+    <data key="LG_ch_press" value="Pressure"/>
+    <data key="LG_ch_flow" value="Flow"/>
+    <data key="LG_ch_level" value="Level"/>
+    <data key="LG_unit_c" value="°C"/>
+    <data key="LG_unit_mpa" value="MPa"/>
+    <data key="LG_unit_m3h" value="m³/h"/>
+    <data key="LG_unit_percent" value="%"/>
+    <data key="LG_channel_buffer" value="Buffer"/>
+    <data key="LG_channel_saveSqlite" value="Store to SQLite"/>
+    <data key="LG_channel_importConfig" value="Import Config"/>
+    <data key="LG_channel_exportJson" value="Export JSON"/>
+    <data key="LG_channel_configPath" value="config/example.json"/>
+    <data key="LG_channel_statTip" value="5 channels · 4 enabled"/>
+    <data key="LG_card_realCurve" value="Real-time Curve"/>
+    <data key="LG_curve_desc" value="4 channels normalized · 2000 points · 500 ms"/>
+    <data key="LG_curve_legend_temp" value="Temperature"/>
+    <data key="LG_curve_legend_press" value="Pressure"/>
+    <data key="LG_curve_legend_flow" value="Flow"/>
+    <data key="LG_curve_legend_level" value="Level"/>
+    <data key="LG_curve_btnPause" value="Pause"/>
+    <data key="LG_curve_upperLimit" value="Upper limit 80%"/>
+    <data key="LG_card_realData" value="Real-time Data"/>
+    <data key="LG_realData_desc" value="t_sample · 4 channels · refresh 500 ms"/>
+    <data key="LG_rd_col_channel" value="Channel"/>
+    <data key="LG_rd_col_reg" value="Register"/>
+    <data key="LG_rd_col_raw" value="Raw"/>
+    <data key="LG_rd_col_eng" value="Scaled"/>
+    <data key="LG_rd_col_unit" value="Unit"/>
+    <data key="LG_rd_col_rtt" value="RTT"/>
+    <data key="LG_rd_col_status" value="Status"/>
+    <data key="LG_rd_col_updateTime" value="Updated"/>
+    <data key="LG_status_overUpper" value="Over limit"/>
+    <data key="LG_status_normal" value="Normal"/>
+    <data key="LG_rd_dbTip" value="Stored in hmi.db · 12,477 rows · index (reg_addr, ts)"/>
+    <data key="LG_rd_doubleClickTip" value="Double-click a row to view its history curve"/>
+    <data key="LG_card_collectStat" value="Acquisition Stats"/>
+    <data key="LG_stat_totalReq" value="Total Requests"/>
+    <data key="LG_stat_successRate" value="Success Rate"/>
+    <data key="LG_stat_timeout" value="Timeouts"/>
+    <data key="LG_stat_exceptionCode" value="Exception Codes"/>
+    <data key="LG_stat_avgRtt" value="Avg RTT"/>
+    <data key="LG_stat_peakRtt" value="Peak RTT"/>
+    <data key="LG_stat_crcErr" value="CRC Errors"/>
+    <data key="LG_stat_lostRate" value="Lost Rate"/>
+    <data key="LG_card_alarmFault" value="Alarms &amp; Faults"/>
+    <data key="LG_alarm_tag_alarm" value="Alarm"/>
+    <data key="LG_alarm_tag_fault" value="Fault"/>
+    <data key="LG_alarm_msg_tempOver" value="Temperature 81.2 °C exceeds upper limit 80.0 °C"/>
+    <data key="LG_alarm_msg_flowTimeout" value="Flow acquisition timed out, retried 3 times"/>
+    <data key="LG_alarm_msg_serialReconnect" value="Serial link lost 0.8 s, reconnected automatically"/>
+    <data key="LG_alarm_filterTip" value="Debounce: log after 2 consecutive violations"/>
+    <data key="LG_alarm_paramTip" value="Limits: upper 80.0 °C / lower 10.0 %"/>
+    <data key="LG_alarm_btn_all" value="View All"/>
+    <data key="LG_alarm_btn_clear" value="Clear"/>
+    <data key="LG_alarm_totalCount" value="12 total"/>
+    <data key="LG_card_dataStore" value="Data Storage"/>
+    <data key="LG_store_timeRange" value="Last 1 hour"/>
+    <data key="LG_store_btn_query" value="Query"/>
+    <data key="LG_store_btn_export" value="Export"/>
+    <data key="LG_store_dbInfo" value="hmi.db · 3.2 MB"/>
+    <data key="LG_store_recordCount" value="12,477 rows recorded"/>
+    <data key="LG_store_range_1h" value="Last 1 hour"/>
+    <data key="LG_store_range_6h" value="Last 6 hours"/>
+    <data key="LG_store_range_24h" value="Last 24 hours"/>
+    <data key="LG_store_range_7d" value="Last 7 days"/>
+    <data key="LG_statusbar_connInfo" value="Connected COM9 · 9600 8-N-1 · Slave 1"/>
+    <data key="LG_statusbar_period" value="Sampling 500 ms"/>
+    <data key="LG_statusbar_success" value="Success 12,477"/>
+    <data key="LG_statusbar_timeout" value="Timeout 3"/>
+    <data key="LG_statusbar_exception" value="Exception 0"/>
+    <data key="LG_statusbar_crcErr" value="CRC errors 0"/>
+    <data key="LG_statusbar_recordInfo" value="12,477 rows recorded"/>
+</root>

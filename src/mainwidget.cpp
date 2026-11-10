@@ -6,8 +6,8 @@
 #include "Language.h"
 #include "Signals.h"
 
-MainWidget::MainWidget(QWidget *parent)
-    : QWidget(parent)
+MainWidget::MainWidget(BaseWidget *parent)
+    : BaseWidget(parent)
     , ui(new Ui::MainWidget)
     , systemTray(nullptr)
 {
@@ -18,6 +18,11 @@ MainWidget::MainWidget(QWidget *parent)
 MainWidget::~MainWidget()
 {
     delete ui;
+}
+
+void MainWidget::languageChange()
+{
+
 }
 
 // 初始化主窗口
@@ -31,7 +36,10 @@ void MainWidget::init()
 // 初始化用户界面
 void MainWidget::initUI()
 {
-    setWindowTitle("ExternalSightPro");
+    // 自定义 QWidget 子类需开启该属性，样式表中的 background-color/border 才会生效
+    setAttribute(Qt::WA_StyledBackground, true);
+    setWindowTitle(LANGUAGE("LG_appVersion"));
+    setWindowIcon(QIcon(":/icon/main/appIcon.png"));
 }
 
 // 初始化系统托盘图标

@@ -1,0 +1,83 @@
+/*线条颜色*/
+/* 水平线 */
+QFrame[frameShape="4"] {
+    background-color: $line_color1;
+    min-height: 1px;
+}
+
+/* 垂直线 */
+QFrame[frameShape="5"] {
+    background-color: $line_color1;
+    min-width: 1px;
+}
+
+/*基础Label样式*/
+QLabel {
+    color: $textMain;
+    font-size: $fontSize;
+}
+
+QLabel#labelTip {
+    color: $textSecondary;
+    font-size: $fontTip;
+}
+
+QLabel#labelTitle {
+    color: $titleBarBg;
+    font-size: $fontCardTitle;
+}
+
+/*基础Button样式*/
+QPushButton {
+    font-size: $fontSize;
+    color: $textMain;
+    background-color: $toolbarBg;
+    border: 1px solid $inputBorder;
+    border-radius: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+/*基础LineEdit样式*/
+QLineEdit {
+    font-size: $fontSize;
+    color: $textMain;
+    background-color: $cardBg;
+    border: 1px solid $inputBorder;
+    border-radius: 4px;
+}
+
+/*基础ComboBox样式*/
+QComboBox {
+    font-size: $fontSize;
+    color: $textMain;
+    background-color: $cardBg;
+    border: 1px solid $inputBorder;
+    border-radius: 4px;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+/*下拉按钮子控件：背景与边框透明，融入输入框*/
+QComboBox::drop-down {
+    border: none;
+    background: transparent;
+    width: 13px;
+}
+
+/*下拉箭头尺寸，Qt 默认绘制三角箭头*/
+QComboBox::down-arrow {
+    image: url(:/icon/main/down.png);
+    width: 9px;
+    height: 9px;
+}
+
+
+/*基础Table样式*/
+QTableWidget {
+    font-size: $fontSize;
+    color: $textMain;
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 4px;
+}

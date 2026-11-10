@@ -2,5 +2,7 @@
     <qresource prefix="/">
         <file>icon/main/Sight.jpg</file>
         <file>icon/main/Sight.png</file>
+        <file>icon/main/appIcon.png</file>
+        <file>icon/main/down.png</file>
     </qresource>
 </RCC>

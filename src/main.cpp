@@ -4,6 +4,7 @@
 #include "LogHandler.h"
 #include "BaseConfigSetting.h"
 #include "Language.h"
+#include "BaseStytle.h"
 
 int main(int argc, char *argv[])
 {
@@ -16,6 +17,9 @@ int main(int argc, char *argv[])
     qDebug() << "Application started";
     qInfo() << "Qt version:" << QT_VERSION_STR;
     
+    // 加载样式
+    BaseStytle::getInstance()->loadStyle();
+
     // 加载配置
     BaseConfigSetting::getInstance();
     //加载语言类

@@ -6,14 +6,167 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1200</width>
+    <height>700</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1000</width>
+    <height>600</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>MainWidget</string>
   </property>
+  <layout class="QVBoxLayout" name="verticalLayout_5" stretch="0,1">
+   <property name="leftMargin">
+    <number>9</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>9</number>
+   </property>
+   <property name="bottomMargin">
+    <number>9</number>
+   </property>
+   <item>
+    <layout class="QVBoxLayout" name="verticalLayout_4">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="menuWidget" name="MenuWidget" native="true"/>
+       </item>
+       <item>
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Orientation::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="operationWidget" name="OperationWidget" native="true"/>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,3,1">
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="ComSetWidget" name="comSetWidget" native="true"/>
+       </item>
+       <item>
+        <widget class="ModbusSetWidget" name="modbusSetWidget" native="true"/>
+       </item>
+       <item>
+        <widget class="ChannelSetWidget" name="channelSetWidget" native="true"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <item>
+        <widget class="RealCurveWidget" name="realCurveWidget" native="true"/>
+       </item>
+       <item>
+        <widget class="RealDataWidget" name="realDataWidget" native="true"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="CollectionStatisticsWodget" name="collectionStatisticsWidget" native="true"/>
+       </item>
+       <item>
+        <widget class="AlarmAndFaultWidget" name="alarmAndfaultWidget" native="true"/>
+       </item>
+       <item>
+        <widget class="DataSaveWidget" name="dataSaveWidget" native="true"/>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>AlarmAndFaultWidget</class>
+   <extends>QWidget</extends>
+   <header>alarmandfaultwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ChannelSetWidget</class>
+   <extends>QWidget</extends>
+   <header>channelsetwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>CollectionStatisticsWodget</class>
+   <extends>QWidget</extends>
+   <header>collectionstatisticswodget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ComSetWidget</class>
+   <extends>QWidget</extends>
+   <header>comsetwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DataSaveWidget</class>
+   <extends>QWidget</extends>
+   <header>datasavewidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>ModbusSetWidget</class>
+   <extends>QWidget</extends>
+   <header>modbussetwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>menuWidget</class>
+   <extends>QWidget</extends>
+   <header>menuwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>operationWidget</class>
+   <extends>QWidget</extends>
+   <header>operationwidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RealCurveWidget</class>
+   <extends>QWidget</extends>
+   <header>realcurvewidget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>RealDataWidget</class>
+   <extends>QWidget</extends>
+   <header>realdatawidget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

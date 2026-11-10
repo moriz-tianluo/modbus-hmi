@@ -54,5 +54,8 @@ private:
 };
 
 #define LANGUAGE_INSTANCE Language::getInstance()
+#define LANGUAGE(key) LANGUAGE_INSTANCE->getLanguageString(key)
+
+
 
 #endif // LANGUAGE_H

@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>stytle/appstytle.css</file>
+        <file>stytle/basestytle.css</file>
+        <file>stytle/color.ini</file>
+    </qresource>
+</RCC>

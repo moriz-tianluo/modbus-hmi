@@ -41,7 +41,7 @@ void BaseSystemTray::createTrayIcon()
     trayIcon = new QSystemTrayIcon(this);
 
     // 尝试使用 PNG 格式图标（更可靠）
-    QIcon icon(":/icon/main/Sight.png");
+    QIcon icon(":/icon/main/appIcon.png");
     
     // 检查图标是否加载成功
     if (icon.isNull()) {

@@ -2,6 +2,7 @@
 #define MAINWIDGET_H
 
 #include <QWidget>
+#include "BaseWidget.h"
 #include "BaseSystemTray.h"
 
 QT_BEGIN_NAMESPACE
@@ -10,14 +11,16 @@ class MainWidget;
 }
 QT_END_NAMESPACE
 
-// 主窗口,继承自QWidget
-class MainWidget : public QWidget
+// 主窗口
+class MainWidget : public BaseWidget
 {
     Q_OBJECT
 
 public:
-    MainWidget(QWidget *parent = nullptr);
+    MainWidget(BaseWidget *parent = nullptr);
     ~MainWidget();
+
+    void languageChange() override;
 
     // 初始化主窗口
     void init();

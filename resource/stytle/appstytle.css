@@ -1,0 +1,369 @@
+/*应用样式*/
+/*主窗口样式*/
+
+
+MainWidget {
+    background-color: $winBg;
+/*    border: 1px solid $borderColor;*/
+/*    border-radius: 4px;*/
+}
+
+
+/*菜单样式*/
+menuWidget QWidget{
+    background-color: $winBg;
+    border: 1px solid $borderColor;
+}
+menuWidget QToolButton{
+    background-color: $winBg;
+    border: none;
+}
+
+/*通道配置卡片*/
+ChannelSetWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*卡片标题前的蓝色竖条*/
+#labelTitleBar {
+    background-color: $primaryBlue;
+    border-radius: 1px;
+}
+
+#labelTitle {
+    color: $textMain;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/*全选：纯文字链接样式*/
+#pushButtonSelectAll {
+    background: transparent;
+    border: none;
+    padding: 0px;
+    color: $primaryBlue;
+    font-size: 12px;
+}
+
+#pushButtonSelectAll:hover {
+    color: $primaryBlue;
+    text-decoration: underline;
+}
+
+/*串口设置卡片*/
+ComSetWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*Modbus 设置卡片*/
+ModbusSetWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*采集统计卡片*/
+CollectionStatisticsWodget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*统计小格*/
+#widgetTotal, #widgetSuccess
+, #widgetTimeout, #widgetException {
+    background-color: $tableHeaderBg;
+    border-radius: 6px;
+}
+
+/*统计小格标题*/
+QLabel[role="statCaption"] {
+    color: $textSecondary;
+    font-size: 10px;
+}
+
+/*统计小格数值*/
+QLabel[role="statValue"] {
+    color: $textMain;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+QLabel[role="statValueSuccess"] {
+    color: $btnGreenBg;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+QLabel[role="statValueWarn"] {
+    color: $warnOrange;
+    font-size: 17px;
+    font-weight: bold;
+}
+
+/*统计明细行*/
+QLabel[role="statItem"] {
+    color: $menuText;
+    font-size: 11px;
+}
+
+QLabel[role="statItemValue"] {
+    color: $textMain;
+    font-size: 11px;
+}
+
+/*报警与故障卡片*/
+AlarmAndFaultWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*标题右侧计数徽标*/
+#labelAlarmCountBadge {
+    background-color: $warnRedBg;
+    color: $warningRed;
+    border-radius: 9px;
+    font-size: 10px;
+}
+
+/*报警条目左侧色条*/
+#labelAlarmBar1 {
+    background-color: $warningRed;
+    border-radius: 1px;
+}
+
+#labelAlarmBar2, #labelAlarmBar3 {
+    background-color: $warnOrange;
+    border-radius: 1px;
+}
+
+/*条目时间*/
+QLabel[role="alarmTime"] {
+    color: $textSecondary;
+    font-size: 10px;
+}
+
+/*条目描述*/
+QLabel[role="alarmMsg"] {
+    color: $textMain;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+/*报警标签*/
+QLabel[role="tagAlarm"] {
+    background-color: $warnRedBg;
+    color: $warningRed;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+}
+
+/*故障标签*/
+QLabel[role="tagFault"] {
+    background-color: $warnOrangeBg;
+    color: $warnOrange;
+    border-radius: 3px;
+    padding: 1px 6px;
+    font-size: 10px;
+}
+
+/*条目分隔线*/
+#widgetAlarmItem1
+, #widgetAlarmItem2 {
+    border-bottom: 1px solid $dividerLight;
+}
+
+/*底部计数*/
+#labelTotalCount {
+    color: $textSecondary;
+    font-size: 10px;
+    padding-left: 0px;
+}
+
+/*数据存储卡片*/
+DataSaveWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*记录条数*/
+#labelRecordCount {
+    color: $textMain;
+    font-size: 11px;
+    padding-left: 10px;
+}
+
+/*主操作按钮（查询）*/
+#pushButtonQuery {
+    background-color: $btnBlueLightBg;
+    color: $primaryBlue;
+    border: 1px solid $btnBlueLightBorder;
+    border-radius: 4px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+/*顶部工具条*/
+operationWidget {
+    background-color: $toolbarBg;
+}
+
+operationWidget QLabel[role="fieldLabel"] {
+    color: $menuText;
+    font-size: 11px;
+}
+
+/*主操作按钮：打开串口*/
+#pushButtonOpenCom {
+    background-color: $btnGreenBg;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+}
+
+/*次操作按钮：开始采集*/
+#pushButtonStart {
+    background-color: $btnBlueLightBg;
+    color: $primaryBlue;
+    border: 1px solid $btnBlueLightBorder;
+    border-radius: 4px;
+}
+
+/*运行状态标签*/
+#labelStatus {
+    background-color: $statusOkBg;
+    color: $btnGreenBg;
+    border-radius: 10px;
+    padding: 3px 10px;
+    font-size: 11px;
+}
+
+/*字段名称*/
+QLabel[role="fieldLabel"] {
+    color: $menuText;
+    font-size: 12px;
+}
+
+/*字段补充说明*/
+QLabel[role="tip"] {
+    color: $textSecondary;
+    font-size: 10px;
+}
+
+/*通道 / 实时数据表格*/
+#tableWidgetChannel
+, #tableWidgetRealData {
+    background-color: transparent;
+    border: none;
+    outline: 0;
+}
+
+#tableWidgetRealData {
+    font-size: 11px;
+}
+
+#tableWidgetChannel::item
+, #tableWidgetRealData::item {
+    border: none;
+    padding-left: 2px;
+    color: $textMain;
+}
+
+#tableWidgetChannel::item:selected
+, #tableWidgetRealData::item:selected {
+    background-color: $btnBlueLightBg;
+    color: $textMain;
+}
+
+/*表头*/
+#tableWidgetChannel QHeaderView
+, #tableWidgetRealData QHeaderView {
+    background-color: $tableHeaderBg;
+    border: none;
+}
+
+#tableWidgetChannel QHeaderView::section
+, #tableWidgetRealData QHeaderView::section {
+    background-color: $tableHeaderBg;
+    color: $menuText;
+    font-size: 11px;
+    border: none;
+    padding-left: 2px;
+}
+
+#tableWidgetChannel QTableCornerButton::section
+, #tableWidgetRealData QTableCornerButton::section {
+    background-color: $tableHeaderBg;
+    border: none;
+}
+
+/*实时数据卡片*/
+RealDataWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+/*标题右侧副标题*/
+#labelSubtitle {
+    color: $versionText;
+    font-size: 10px;
+}
+
+/*实时曲线卡片*/
+RealCurveWidget {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 6px;
+}
+
+#chartView {
+    background-color: $cardBg;
+    border: none;
+}
+
+/*图例色块*/
+#labelLegendDashTemp {
+    background-color: $warningRed;
+    border-radius: 1px;
+}
+
+#labelLegendDashPress {
+    background-color: $primaryBlue;
+    border-radius: 1px;
+}
+
+#labelLegendDashFlow {
+    background-color: $btnGreenBg;
+    border-radius: 1px;
+}
+
+#labelLegendDashLevel {
+    background-color: $purpleColor;
+    border-radius: 1px;
+}
+
+/*图例文字*/
+QLabel[role="legend"] {
+    color: $menuText;
+    font-size: 11px;
+}
+
+/*分隔线*/
+#widgetDivider {
+    background-color: $dividerLight;
+}
+
+/*底部说明文字*/
+QLabel[role="footnote"] {
+    color: $versionText;
+    font-size: 10px;
+    padding-left: 10px;
+}

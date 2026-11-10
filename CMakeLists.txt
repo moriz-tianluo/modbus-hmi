@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.19)
-set(PROJECT_NAME "BaseProject")
+set(PROJECT_NAME "modbus-hmi")
 project(${PROJECT_NAME} LANGUAGES CXX)
 
-find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml)
+find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml Charts)
 
 qt_standard_project_setup()
 
@@ -15,6 +15,17 @@ set(SOURCE_FILES
     src/base/BaseWidget.cpp
     src/base/Language.cpp
     src/base/Signals.cpp
+    src/base/BaseStytle.cpp
+    src/component/menuwidget.cpp
+    src/component/operationwidget.cpp
+    src/component/comsetwidget.cpp
+    src/component/modbussetwidget.cpp
+    src/component/channelsetwidget.cpp
+    src/component/realdatawidget.cpp
+    src/component/realcurvewidget.cpp
+    src/component/collectionstatisticswodget.cpp
+    src/component/alarmandfaultwidget.cpp
+    src/component/datasavewidget.cpp
 )
 
 set(HEADER_FILES
@@ -26,13 +37,37 @@ set(HEADER_FILES
     include/base/BaseWidget.h
     include/base/Language.h
     include/base/Signals.h
+    include/base/BaseStytle.h
+    include/component/menuwidget.h
+    include/component/operationwidget.h
+    include/component/comsetwidget.h
+    include/component/modbussetwidget.h
+    include/component/channelsetwidget.h
+    include/component/realdatawidget.h
+    include/component/realcurvewidget.h
+    include/component/collectionstatisticswodget.h
+    include/component/alarmandfaultwidget.h
+    include/component/datasavewidget.h
 )
 
 set(UI_FILES
     forms/mainwidget.ui
+    forms/component/menuwidget.ui
+    forms/component/operationwidget.ui
+    forms/component/comsetwidget.ui
+    forms/component/modbussetwidget.ui
+    forms/component/channelsetwidget.ui
+    forms/component/realdatawidget.ui
+    forms/component/realcurvewidget.ui
+    forms/component/collectionstatisticswodget.ui
+    forms/component/alarmandfaultwidget.ui
+    forms/component/datasavewidget.ui
 )
 
-qt_add_resources(RESOURCES resource/resource.qrc)
+qt_add_resources(RESOURCES
+    resource/resource.qrc
+    resource/stytlefile.qrc
+)
 
 qt_add_executable(${PROJECT_NAME}
     WIN32 MACOSX_BUNDLE
@@ -43,13 +78,16 @@ qt_add_executable(${PROJECT_NAME}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    AUTOUIC_SEARCH_PATHS ${PROJECT_SOURCE_DIR}/forms
+    AUTOUIC_SEARCH_PATHS
+        "${PROJECT_SOURCE_DIR}/forms;${PROJECT_SOURCE_DIR}/forms/component"
+
 )
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         ${PROJECT_SOURCE_DIR}/include
         ${PROJECT_SOURCE_DIR}/include/base
+        ${PROJECT_SOURCE_DIR}/include/component
 )
 
 target_link_libraries(${PROJECT_NAME}
@@ -57,6 +95,7 @@ target_link_libraries(${PROJECT_NAME}
         Qt::Core
         Qt::Widgets
         Qt::Xml
+        Qt::Charts
 )
 
 include(GNUInstallDirs)

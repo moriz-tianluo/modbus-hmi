@@ -10,4 +10,114 @@
     <data key="LG_register_confirm" value="确认注册"/>
     <data key="LG_quit" value="退出"/>
     <data key="LG_config" value="配置"/>
-   </root>
+    <data key="LG_appTitle" value="Modbus HMI  ·  工业上位机采集监控"/>
+    <data key="LG_appVersion" value="modbus‑hmi v0.9"/>
+    <data key="LG_menu_file" value="文件"/>
+    <data key="LG_menu_edit" value="编辑"/>
+    <data key="LG_menu_device" value="设备"/>   
+    <data key="LG_menu_view" value="视图"/>
+    <data key="LG_menu_tools" value="工具"/>
+    <data key="LG_menu_help" value="帮助"/>
+    <data key="LG_tool_port" value="端口"/>
+    <data key="LG_tool_refresh" value="刷新"/>
+    <data key="LG_tool_baud" value="波特率"/>
+    <data key="LG_tool_frame" value="帧格式"/>
+    <data key="LG_tool_slave" value="从站"/>
+    <data key="LG_tool_period" value="周期"/>
+    <data key="LG_tool_openSerial" value="打开串口"/>
+    <data key="LG_tool_startCollect" value="开始采集"/>
+    <data key="LG_tool_pauseCurve" value="暂停曲线"/>
+    <data key="LG_tool_exportCsv" value="导出 CSV"/>
+    <data key="LG_tool_screenshot" value="截图"/>
+    <data key="LG_tool_statusRunning" value="已连接 · 采集运行中"/>
+    <data key="LG_card_serialSet" value="串口设置"/>
+    <data key="LG_serial_port" value="端口"/>
+    <data key="LG_serial_baud" value="波特率"/>
+    <data key="LG_serial_frame" value="帧格式"/>
+    <data key="LG_serial_frameTip" value="8 数据位 · 无校验 · 1 停止位"/>
+    <data key="LG_serial_timeout" value="超时"/>
+    <data key="LG_serial_retry" value="重试"/>
+    <data key="LG_card_modbusSet" value="Modbus 设置"/>
+    <data key="LG_modbus_funcCode" value="功能码"/> 
+    <data key="LG_modbus_startAddr" value="起始地址"/>
+    <data key="LG_modbus_quantity" value="数量"/>
+    <data key="LG_modbus_tip" value="从站 1 · 3.5 字符判帧 · CRC16"/>
+    <data key="LG_card_channelConfig" value="通道配置"/>
+    <data key="LG_channel_selectAll" value="全选"/>
+    <data key="LG_table_channel" value="通道"/>
+    <data key="LG_table_addr" value="地址"/>
+    <data key="LG_table_curValue" value="当前值"/>
+    <data key="LG_ch_temp" value="温度"/>
+    <data key="LG_ch_press" value="压力"/>
+    <data key="LG_ch_flow" value="流量"/>
+    <data key="LG_ch_level" value="液位"/>
+    <data key="LG_unit_c" value="℃"/>
+    <data key="LG_unit_mpa" value="MPa"/>
+    <data key="LG_unit_m3h" value="m³/h"/>
+    <data key="LG_unit_percent" value="%"/>
+    <data key="LG_channel_buffer" value="缓冲"/>
+    <data key="LG_channel_saveSqlite" value="落库 SQLite"/>
+    <data key="LG_channel_importConfig" value="导入配置"/>
+    <data key="LG_channel_exportJson" value="导出 JSON"/>
+    <data key="LG_channel_configPath" value="config/example.json"/>
+    <data key="LG_channel_statTip" value="5 通道 · 4 已启用"/>
+    <data key="LG_card_realCurve" value="实时曲线"/>
+    <data key="LG_curve_desc" value="4 通道按量程归一化 · 滚动 2000 点 · 500 ms"/>
+    <data key="LG_curve_legend_temp" value="温度"/>
+    <data key="LG_curve_legend_press" value="压力"/>
+    <data key="LG_curve_legend_flow" value="流量"/>
+    <data key="LG_curve_legend_level" value="液位"/>
+    <data key="LG_curve_btnPause" value="暂停"/>
+    <data key="LG_curve_upperLimit" value="上限 80%"/>
+    <data key="LG_card_realData" value="实时数据"/>
+    <data key="LG_realData_desc" value="t_sample · 4 通道 · 刷新 500 ms"/>
+    <data key="LG_rd_col_channel" value="通道"/>
+    <data key="LG_rd_col_reg" value="寄存器"/>
+    <data key="LG_rd_col_raw" value="原始值"/>
+    <data key="LG_rd_col_eng" value="工程值"/>
+    <data key="LG_rd_col_unit" value="单位"/>
+    <data key="LG_rd_col_rtt" value="RTT"/>
+    <data key="LG_rd_col_status" value="状态"/>
+    <data key="LG_rd_col_updateTime" value="更新时间"/>
+    <data key="LG_status_overUpper" value="超上限"/>
+    <data key="LG_status_normal" value="正常"/>
+    <data key="LG_rd_dbTip" value="落库 hmi.db · 12,477 条 · 索引 (reg_addr, ts)"/>
+    <data key="LG_rd_doubleClickTip" value="双击行可查看该点历史曲线"/>
+    <data key="LG_card_collectStat" value="采集统计"/>
+    <data key="LG_stat_totalReq" value="总请求"/>
+    <data key="LG_stat_successRate" value="成功率"/>
+    <data key="LG_stat_timeout" value="超时"/>
+    <data key="LG_stat_exceptionCode" value="异常码"/>
+    <data key="LG_stat_avgRtt" value="平均 RTT"/>
+    <data key="LG_stat_peakRtt" value="峰值 RTT"/>
+    <data key="LG_stat_crcErr" value="CRC 校验错"/>
+    <data key="LG_stat_lostRate" value="丢点率"/>
+    <data key="LG_card_alarmFault" value="报警与故障"/>
+    <data key="LG_alarm_tag_alarm" value="报警"/>
+    <data key="LG_alarm_tag_fault" value="故障"/>
+    <data key="LG_alarm_msg_tempOver" value="温度 81.2 ℃ 超过上限 80.0 ℃"/>
+    <data key="LG_alarm_msg_flowTimeout" value="流量 采集超时，重试 3 次"/>
+    <data key="LG_alarm_msg_serialReconnect" value="串口断线 0.8 s，已自动重连"/>
+    <data key="LG_alarm_filterTip" value="去抖：连续 2 次超限才记录"/>
+    <data key="LG_alarm_paramTip" value="参数：上限 80.0 ℃ / 下限 10.0 %"/>
+    <data key="LG_alarm_btn_all" value="查看全部"/>
+    <data key="LG_alarm_btn_clear" value="清除"/>
+    <data key="LG_alarm_totalCount" value="共 12 条"/>
+    <data key="LG_card_dataStore" value="数据存储"/>
+    <data key="LG_store_timeRange" value="最近 1 小时"/>
+    <data key="LG_store_btn_query" value="查询"/>
+    <data key="LG_store_btn_export" value="导出"/>
+    <data key="LG_store_dbInfo" value="hmi.db · 3.2 MB"/>
+    <data key="LG_store_recordCount" value="记录 12,477 条"/>
+    <data key="LG_store_range_1h" value="最近 1 小时"/>
+    <data key="LG_store_range_6h" value="最近 6 小时"/>
+    <data key="LG_store_range_24h" value="最近 24 小时"/>
+    <data key="LG_store_range_7d" value="最近 7 天"/>
+    <data key="LG_statusbar_connInfo" value="已连接 COM9 · 9600 8‑N‑1 · 从站 1"/>
+    <data key="LG_statusbar_period" value="采集 500 ms"/>
+    <data key="LG_statusbar_success" value="成功 12,477"/>
+    <data key="LG_statusbar_timeout" value="超时 3"/>
+    <data key="LG_statusbar_exception" value="异常 0"/>
+    <data key="LG_statusbar_crcErr" value="CRC 错 0"/>
+    <data key="LG_statusbar_recordInfo" value="记录 12,477 条"/>
+</root>
