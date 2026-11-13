@@ -1,0 +1,44 @@
+[2026-11-11 15:04:56.325] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-11 15:04:56.367] [DEBUG] Application started
+[2026-11-11 15:04:56.367] [INFO] Qt version: 6.8.3
+[2026-11-11 15:04:56.367] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-11 15:04:56.367] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-11 15:04:56.367] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-11 15:04:56.368] [DEBUG] All styles applied successfully.
+[2026-11-11 15:04:56.370] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"
+[2026-11-11 15:04:56.515] [INFO] createTrayIcon - icon loaded: true
+[2026-11-11 15:04:56.516] [INFO] System tray icon displayed
+[2026-11-11 15:04:56.517] [CRITICAL] initSystemTray
+[2026-11-11 15:05:04.750] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-11 15:05:04.774] [DEBUG] Application started
+[2026-11-11 15:05:04.774] [INFO] Qt version: 6.8.3
+[2026-11-11 15:05:04.774] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-11 15:05:04.775] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-11 15:05:04.775] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-11 15:05:04.775] [DEBUG] All styles applied successfully.
+[2026-11-11 15:05:04.775] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"
+[2026-11-11 15:05:04.882] [INFO] createTrayIcon - icon loaded: true
+[2026-11-11 15:05:04.883] [INFO] System tray icon displayed
+[2026-11-11 15:05:04.883] [CRITICAL] initSystemTray
+[2026-11-11 15:11:47.842] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-11 15:11:47.884] [DEBUG] Application started
+[2026-11-11 15:11:47.884] [INFO] Qt version: 6.8.3
+[2026-11-11 15:11:47.886] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-11 15:11:47.888] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-11 15:11:47.888] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-11 15:11:47.890] [DEBUG] All styles applied successfully.
+[2026-11-11 15:11:47.891] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"
+[2026-11-11 15:11:48.026] [INFO] createTrayIcon - icon loaded: true
+[2026-11-11 15:11:48.028] [INFO] System tray icon displayed
+[2026-11-11 15:11:48.028] [CRITICAL] initSystemTray
+[2026-11-11 15:12:00.096] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-11 15:12:00.118] [DEBUG] Application started
+[2026-11-11 15:12:00.118] [INFO] Qt version: 6.8.3
+[2026-11-11 15:12:00.119] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-11 15:12:00.119] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-11 15:12:00.119] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-11 15:12:00.120] [DEBUG] All styles applied successfully.
+[2026-11-11 15:12:00.120] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"
+[2026-11-11 15:12:00.229] [INFO] createTrayIcon - icon loaded: true
+[2026-11-11 15:12:00.230] [INFO] System tray icon displayed
+[2026-11-11 15:12:00.230] [CRITICAL] initSystemTray

@@ -9,14 +9,47 @@ MainWidget {
 }
 
 
-/*菜单样式*/
-menuWidget QWidget{
+/*菜单栏容器*/
+menuWidget {
     background-color: $winBg;
-    border: 1px solid $borderColor;
 }
 menuWidget QToolButton{
     background-color: $winBg;
     border: none;
+}
+
+/*菜单按钮点击即弹出菜单，不显示下拉箭头*/
+menuWidget QToolButton::menu-indicator {
+    image: none;
+    width: 0px;
+    height: 0px;
+}
+
+/*菜单弹出面板*/
+QMenu {
+    background-color: $cardBg;
+    border: 1px solid $borderColor;
+    border-radius: 4px;
+    padding: 4px;
+}
+QMenu::item {
+    background-color: transparent;
+    color: $textMain;
+    padding: 6px 28px 6px 14px;
+    border-radius: 4px;
+}
+/*悬浮项：浅蓝底 + 深蓝字，避免白字浅底看不清*/
+QMenu::item:selected {
+    background-color: $btnBlueLightBg;
+    color: $primaryBlue;
+}
+QMenu::item:disabled {
+    color: $textSecondary;
+}
+QMenu::separator {
+    height: 1px;
+    background-color: $dividerLight;
+    margin: 4px 6px;
 }
 
 /*通道配置卡片*/
@@ -302,6 +335,13 @@ QLabel[role="tip"] {
 , #tableWidgetRealData QTableCornerButton::section {
     background-color: $tableHeaderBg;
     border: none;
+}
+
+/*选中行：浅蓝底 + 深蓝字，选中行与曲线高亮联动*/
+#tableWidgetChannel::item:selected
+, #tableWidgetRealData::item:selected {
+    background-color: $btnBlueLightBg;
+    color: $primaryBlue;
 }
 
 /*实时数据卡片*/

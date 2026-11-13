@@ -18,11 +18,22 @@ const QString kKeyScale = QStringLiteral("scale");
 const QString kKeyRangeMin = QStringLiteral("rangeMin");
 const QString kKeyRangeMax = QStringLiteral("rangeMax");
 const QString kKeyEnabled = QStringLiteral("enabled");
+const QString kKeyDataType = QStringLiteral("dataType");
+const QString kKeyDecimals = QStringLiteral("decimals");
+const QString kKeyColor = QStringLiteral("color");
+const QString kKeyAlarmEnabled = QStringLiteral("alarmEnabled");
+const QString kKeyAlarmHigh = QStringLiteral("alarmHigh");
+const QString kKeyAlarmLow = QStringLiteral("alarmLow");
 }
 
 double ChannelItem::value() const
 {
-    return rawValue * scale;
+    double raw = static_cast<double>(rawValue);
+    // 有符号 16 位：最高位为 1 时按补码还原负值
+    if (dataType == ChannelDataType::Signed16 && rawValue >= 0x8000) {
+        raw -= 65536.0;
+    }
+    return raw * scale;
 }
 
 double ChannelItem::percent() const
@@ -78,6 +89,19 @@ void ChannelModel::removeChannel(int index)
     emit channelsChanged();
 }
 
+void ChannelModel::updateChannel(int index, const ChannelItem &item)
+{
+    if (index < 0 || index >= m_channels.size()) {
+        return;
+    }
+
+    // 保留最近一次采集的原始值，其余配置整体替换
+    ChannelItem updated = item;
+    updated.rawValue = m_channels.at(index).rawValue;
+    m_channels[index] = updated;
+    emit channelsChanged();
+}
+
 void ChannelModel::clear()
 {
     if (m_channels.isEmpty()) {
@@ -96,6 +120,34 @@ int ChannelModel::enabledCount() const
         }
     }
     return count;
+}
+
+void ChannelModel::setChannelEnabled(int index, bool enabled)
+{
+    if (index < 0 || index >= m_channels.size()) {
+        return;
+    }
+    if (m_channels.at(index).enabled == enabled) {
+        return;
+    }
+
+    m_channels[index].enabled = enabled;
+    emit channelEnabledChanged(index, enabled);
+}
+
+void ChannelModel::setAllChannelsEnabled(bool enabled)
+{
+    bool changed = false;
+    for (ChannelItem &item : m_channels) {
+        if (item.enabled != enabled) {
+            item.enabled = enabled;
+            changed = true;
+        }
+    }
+
+    if (changed) {
+        emit channelsChanged();
+    }
 }
 
 int ChannelModel::indexOfAddress(quint16 address) const
@@ -293,10 +345,16 @@ ChannelItem ChannelModel::channelFromObject(const QJsonObject &obj, bool *ok) co
     item.name = obj.value(kKeyName).toString();
     item.unit = obj.value(kKeyUnit).toString();
     item.registerAddress = static_cast<quint16>(obj.value(kKeyRegister).toInt());
+    item.dataType = static_cast<ChannelDataType>(obj.value(kKeyDataType).toInt(0));
     item.scale = obj.value(kKeyScale).toDouble(1.0);
     item.rangeMin = obj.value(kKeyRangeMin).toDouble(0.0);
     item.rangeMax = obj.value(kKeyRangeMax).toDouble(100.0);
+    item.decimals = obj.value(kKeyDecimals).toInt(2);
+    item.color = QColor(obj.value(kKeyColor).toString());
     item.enabled = obj.value(kKeyEnabled).toBool(true);
+    item.alarmEnabled = obj.value(kKeyAlarmEnabled).toBool(false);
+    item.alarmHigh = obj.value(kKeyAlarmHigh).toDouble(item.rangeMax);
+    item.alarmLow = obj.value(kKeyAlarmLow).toDouble(item.rangeMin);
     item.rawValue = 0;
 
     if (ok) {
@@ -311,10 +369,16 @@ QJsonObject ChannelModel::channelToObject(const ChannelItem &item) const
     obj.insert(kKeyName, item.name);
     obj.insert(kKeyUnit, item.unit);
     obj.insert(kKeyRegister, item.registerAddress);
+    obj.insert(kKeyDataType, static_cast<int>(item.dataType));
     obj.insert(kKeyScale, item.scale);
     obj.insert(kKeyRangeMin, item.rangeMin);
     obj.insert(kKeyRangeMax, item.rangeMax);
+    obj.insert(kKeyDecimals, item.decimals);
+    obj.insert(kKeyColor, item.color.isValid() ? item.color.name() : QString());
     obj.insert(kKeyEnabled, item.enabled);
+    obj.insert(kKeyAlarmEnabled, item.alarmEnabled);
+    obj.insert(kKeyAlarmHigh, item.alarmHigh);
+    obj.insert(kKeyAlarmLow, item.alarmLow);
     return obj;
 }
 

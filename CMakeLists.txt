@@ -9,6 +9,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
 qt_standard_project_setup()
 
@@ -32,6 +33,11 @@ set(SOURCE_FILES
     src/component/collectionstatisticswodget.cpp
     src/component/alarmandfaultwidget.cpp
     src/component/datasavewidget.cpp
+    src/component/channeleditdialog.cpp
+    src/component/alarmruledialog.cpp
+    src/component/historyquerydialog.cpp
+    src/component/commlogdialog.cpp
+    src/component/curvesettingsdialog.cpp
     3rdparty/QCustomPlot/qcustomplot.cpp
     src/common/projectconfig.cpp
     src/common/serialworker.cpp
@@ -39,6 +45,7 @@ set(SOURCE_FILES
     src/common/channelmodel.cpp
     src/common/serialporthelper.cpp
     src/common/modbuspoller.cpp
+    src/common/savedatasql.cpp
 )
 
 set(HEADER_FILES
@@ -61,6 +68,11 @@ set(HEADER_FILES
     include/component/collectionstatisticswodget.h
     include/component/alarmandfaultwidget.h
     include/component/datasavewidget.h
+    include/component/channeleditdialog.h
+    include/component/alarmruledialog.h
+    include/component/historyquerydialog.h
+    include/component/commlogdialog.h
+    include/component/curvesettingsdialog.h
     3rdparty/QCustomPlot/qcustomplot.h
     include/common/projectconfig.h
     include/common/serialworker.h
@@ -68,6 +80,7 @@ set(HEADER_FILES
     include/common/channelmodel.h
     include/common/serialporthelper.h
     include/common/modbuspoller.h
+    include/common/savedatasql.h
 )
 
 set(UI_FILES
@@ -104,6 +117,7 @@ target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
 target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
 target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
 target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
+target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     AUTOUIC_SEARCH_PATHS
         "${PROJECT_SOURCE_DIR}/forms;${PROJECT_SOURCE_DIR}/forms/component"
@@ -116,6 +130,7 @@ target_include_directories(${PROJECT_NAME}
         ${PROJECT_SOURCE_DIR}/include/base
         ${PROJECT_SOURCE_DIR}/include/component
         ${PROJECT_SOURCE_DIR}/include/common
+        ${PROJECT_SOURCE_DIR}/3rdparty/QCustomPlot
 )
 
 target_link_libraries(${PROJECT_NAME}

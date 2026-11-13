@@ -13,6 +13,7 @@ ModbusPoller::ModbusPoller(ModbusRtu *rtu, QObject *parent)
     if (m_rtu) {
         connect(m_rtu, &ModbusRtu::registersRead, this, &ModbusPoller::onRegistersRead);
         connect(m_rtu, &ModbusRtu::requestFailed, this, &ModbusPoller::onRequestFailed);
+        connect(m_rtu, &ModbusRtu::exceptionReceived, this, &ModbusPoller::onExceptionReceived);
     }
 }
 
@@ -187,6 +188,24 @@ void ModbusPoller::onRequestFailed(ModbusError error, const QString &message)
     m_state = PollerState::Idle;
 
     emit roundFailed(error, message);
+    scheduleNext(m_intervalMs);
+}
+
+void ModbusPoller::onExceptionReceived(quint8 exceptionCode, const QString &message)
+{
+    Q_UNUSED(exceptionCode)
+
+    // 只处理本采集器发出并处于等待状态的请求
+    if (!m_running || m_state != PollerState::Waiting) {
+        return;
+    }
+
+    // 从站明确回了异常码，本轮已确定失败，不再重试，直接计入失败并进入下一轮
+    ++m_failureCount;
+    m_retryCount = 0;
+    m_state = PollerState::Idle;
+
+    emit roundFailed(ModbusError::ExceptionCode, message);
     scheduleNext(m_intervalMs);
 }
 

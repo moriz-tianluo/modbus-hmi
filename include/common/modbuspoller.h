@@ -75,6 +75,8 @@ private slots:
     void onPollTimeout();
     void onRegistersRead(quint16 startAddress, const QVector<quint16> &values, qint64 rttMs);
     void onRequestFailed(ModbusError error, const QString &message);
+    // 从站回异常码：属本轮确定性失败，结束等待态并按周期进入下一轮，避免轮询卡死
+    void onExceptionReceived(quint8 exceptionCode, const QString &message);
 
 private:
     // 发起一次读取。前置校验：state == Idle 且 !rtu->isBusy()，否则跳过

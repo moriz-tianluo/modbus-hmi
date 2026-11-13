@@ -67,6 +67,8 @@ signals:
     // 一帧完整数据到达。帧间隔由 frameInterval 决定，Modbus 下建议 >= 3.5 字符时间
     void frameReceived(const QByteArray &frame);
     void bytesWritten(qint64 bytes);
+    // 通信日志：outgoing=true 为发送帧，false 为接收帧；timestampMs 为本地毫秒时间戳
+    void frameLogged(bool outgoing, const QByteArray &frame, qint64 timestampMs);
     // 所有串口错误统一在这里上报；NoError 不会触发
     void errorOccurred(QSerialPort::SerialPortError error, const QString &message);
     // isReconnecting 状态变化，attempt 从 0 开始计数

@@ -30,6 +30,12 @@
     <data key="LG_tool_exportCsv" value="导出 CSV"/>
     <data key="LG_tool_screenshot" value="截图"/>
     <data key="LG_tool_statusRunning" value="已连接 · 采集运行中"/>
+    <data key="LG_tool_closeSerial" value="关闭串口"/>
+    <data key="LG_tool_stopCollect" value="停止采集"/>
+    <data key="LG_tool_resumeCurve" value="恢复曲线"/>
+    <data key="LG_tool_statusOpened" value="已打开"/>
+    <data key="LG_tool_statusClosed" value="已关闭"/>
+    <data key="LG_tool_statusReconnecting" value="重连中"/>
     <data key="LG_card_serialSet" value="串口设置"/>
     <data key="LG_serial_port" value="端口"/>
     <data key="LG_serial_baud" value="波特率"/>
@@ -41,9 +47,12 @@
     <data key="LG_modbus_funcCode" value="功能码"/> 
     <data key="LG_modbus_startAddr" value="起始地址"/>
     <data key="LG_modbus_quantity" value="数量"/>
+    <data key="LG_modbus_slave" value="从站号"/>
+    <data key="LG_modbus_interval" value="采集周期"/>
     <data key="LG_modbus_tip" value="从站 1 · 3.5 字符判帧 · CRC16"/>
     <data key="LG_card_channelConfig" value="通道配置"/>
     <data key="LG_channel_selectAll" value="全选"/>
+    <data key="LG_channel_unselectAll" value="全不选"/>
     <data key="LG_table_channel" value="通道"/>
     <data key="LG_table_addr" value="地址"/>
     <data key="LG_table_curValue" value="当前值"/>
@@ -55,6 +64,7 @@
     <data key="LG_unit_mpa" value="MPa"/>
     <data key="LG_unit_m3h" value="m³/h"/>
     <data key="LG_unit_percent" value="%"/>
+    <data key="LG_unit_ms" value="ms"/>
     <data key="LG_channel_buffer" value="缓冲"/>
     <data key="LG_channel_saveSqlite" value="落库 SQLite"/>
     <data key="LG_channel_importConfig" value="导入配置"/>
@@ -68,7 +78,17 @@
     <data key="LG_curve_legend_flow" value="流量"/>
     <data key="LG_curve_legend_level" value="液位"/>
     <data key="LG_curve_btnPause" value="暂停"/>
-    <data key="LG_curve_upperLimit" value="上限 80%"/>
+    <data key="LG_curve_range_1min" value="1 分钟"/>
+    <data key="LG_curve_range_5min" value="5 分钟"/>
+    <data key="LG_curve_range_15min" value="15 分钟"/>
+    <data key="LG_curve_range_1hour" value="1 小时"/>
+    <data key="LG_curve_range_4hour" value="4 小时"/>
+    <data key="LG_curve_rangeTip" value="曲线保留时长"/>
+    <data key="LG_curve_upperLimit" value="上限 %1%"/>
+    <data key="LG_curve_settingsTitle" value="曲线设置"/>
+    <data key="LG_curve_lineWidth" value="曲线线宽"/>
+    <data key="LG_curve_showUpperLimit" value="显示上限参考线"/>
+    <data key="LG_curve_upperLimitValue" value="上限参考线数值"/>
     <data key="LG_card_realData" value="实时数据"/>
     <data key="LG_realData_desc" value="t_sample · 4 通道 · 刷新 500 ms"/>
     <data key="LG_rd_col_channel" value="通道"/>
@@ -79,9 +99,15 @@
     <data key="LG_rd_col_rtt" value="RTT"/>
     <data key="LG_rd_col_status" value="状态"/>
     <data key="LG_rd_col_updateTime" value="更新时间"/>
+    <data key="LG_rd_statusWaiting" value="等待"/>
+    <data key="LG_rd_statusOk" value="正常"/>
+    <data key="LG_rd_statusDisabled" value="已停用"/>
+    <data key="LG_rd_rttFmt" value="%1 ms"/>
     <data key="LG_status_overUpper" value="超上限"/>
+    <data key="LG_status_belowLower" value="低于下限"/>
     <data key="LG_status_normal" value="正常"/>
     <data key="LG_rd_dbTip" value="落库 hmi.db · 12,477 条 · 索引 (reg_addr, ts)"/>
+    <data key="LG_rd_dbTipFmt" value="落库 hmi.db · %1 条 · 索引 (ts)"/>
     <data key="LG_rd_doubleClickTip" value="双击行可查看该点历史曲线"/>
     <data key="LG_card_collectStat" value="采集统计"/>
     <data key="LG_stat_totalReq" value="总请求"/>
@@ -103,6 +129,13 @@
     <data key="LG_alarm_btn_all" value="查看全部"/>
     <data key="LG_alarm_btn_clear" value="清除"/>
     <data key="LG_alarm_totalCount" value="共 12 条"/>
+    <data key="LG_alarm_totalCountFmt" value="共 %1 条"/>
+    <data key="LG_alarm_dialogTitle" value="全部报警与故障记录"/>
+    <data key="LG_alarm_col_time" value="时间"/>
+    <data key="LG_alarm_col_type" value="类型"/>
+    <data key="LG_alarm_col_message" value="描述"/>
+    <data key="LG_alarm_btn_close" value="关闭"/>
+    <data key="LG_alarm_msg_reconnecting" value="串口断线，正在第 %1 次重连"/>
     <data key="LG_card_dataStore" value="数据存储"/>
     <data key="LG_store_timeRange" value="最近 1 小时"/>
     <data key="LG_store_btn_query" value="查询"/>
@@ -113,6 +146,22 @@
     <data key="LG_store_range_6h" value="最近 6 小时"/>
     <data key="LG_store_range_24h" value="最近 24 小时"/>
     <data key="LG_store_range_7d" value="最近 7 天"/>
+    <data key="LG_store_range_custom" value="自定义…"/>
+    <data key="LG_store_customTitle" value="自定义时间范围"/>
+    <data key="LG_store_exportFieldsTitle" value="导出字段"/>
+    <data key="LG_store_exportFieldsTip" value="选择需要导出的列："/>
+    <data key="LG_store_fieldTime" value="时间"/>
+    <data key="LG_store_fieldChannel" value="通道"/>
+    <data key="LG_store_fieldRaw" value="原始值"/>
+    <data key="LG_store_fieldValue" value="工程值"/>
+    <data key="LG_store_dbInfoFmt" value="%1 · %2 MB"/>
+    <data key="LG_store_countFmt" value="记录 %1 条"/>
+    <data key="LG_store_exportTitle" value="导出数据"/>
+    <data key="LG_store_exportFilter" value="CSV 文件 (*.csv)"/>
+    <data key="LG_store_msgTitle" value="数据存储"/>
+    <data key="LG_store_exportDoneFmt" value="已导出 %1 条记录到：%2"/>
+    <data key="LG_store_exportFailFmt" value="导出失败：%1"/>
+    <data key="LG_store_err_dbNotReady" value="数据库尚未就绪"/>
     <data key="LG_statusbar_connInfo" value="已连接 COM9 · 9600 8‑N‑1 · 从站 1"/>
     <data key="LG_statusbar_period" value="采集 500 ms"/>
     <data key="LG_statusbar_success" value="成功 12,477"/>
@@ -152,4 +201,123 @@
     <data key="LG_channel_jsonParseError" value="JSON 解析失败"/>
     <data key="LG_channel_jsonInvalidConfig" value="配置文件格式不正确"/>
     <data key="LG_channel_addrNotContiguous" value="启用通道的寄存器地址必须连续且不重复"/>
+    <data key="LG_channel_summaryFmt" value="%1 通道 · %2 已启用"/>
+    <data key="LG_channel_importDoneFmt" value="已导入 %1 个通道"/>
+    <data key="LG_channel_exportDoneFmt" value="已导出到：%1"/>
+    <data key="LG_channel_msgTitle" value="通道配置"/>
+    <data key="LG_channel_importTitle" value="导入通道配置"/>
+    <data key="LG_channel_importFilter" value="JSON 文件 (*.json)"/>
+    <data key="LG_channel_exportTitle" value="导出通道配置"/>
+    <data key="LG_channel_exportFilter" value="JSON 文件 (*.json)"/>
+    <data key="LG_menu_action_exportCsv" value="导出采集数据(CSV)…"/>
+    <data key="LG_menu_action_screenshot" value="保存界面截图…"/>
+    <data key="LG_menu_action_exit" value="退出"/>
+    <data key="LG_menu_action_selectAll" value="全选通道"/>
+    <data key="LG_menu_action_unselectAll" value="全不选通道"/>
+    <data key="LG_menu_action_refreshPort" value="刷新端口"/>
+    <data key="LG_menu_action_connect" value="连接"/>
+    <data key="LG_menu_action_disconnect" value="断开连接"/>
+    <data key="LG_menu_action_startCollect" value="开始采集"/>
+    <data key="LG_menu_action_stopCollect" value="停止采集"/>
+    <data key="LG_menu_action_showLeft" value="显示左栏"/>
+    <data key="LG_menu_action_showCurve" value="显示实时曲线"/>
+    <data key="LG_menu_action_showData" value="显示实时数据"/>
+    <data key="LG_menu_action_showRight" value="显示右栏"/>
+    <data key="LG_menu_action_openDataDir" value="打开数据目录"/>
+    <data key="LG_menu_action_about" value="关于"/>
+    <data key="LG_curve_btnResume" value="恢复曲线"/>
+    <data key="LG_screenshot_title" value="保存界面截图"/>
+    <data key="LG_screenshot_filter" value="图片文件 (*.png)"/>
+    <data key="LG_screenshot_doneFmt" value="截图已保存到：%1"/>
+    <data key="LG_screenshot_failFmt" value="截图保存失败：%1"/>
+    <data key="LG_about_title" value="关于"/>
+    <data key="LG_about_text" value="%1&#10;Qt 版本：%2"/>
+    <data key="LG_menu_action_channelManager" value="通道管理…"/>
+    <data key="LG_menu_action_alarmRule" value="报警规则…"/>
+    <data key="LG_menu_action_commLog" value="通信日志…"/>
+    <data key="LG_channel_mgrTitle" value="通道管理"/>
+    <data key="LG_channel_formTitle" value="通道属性"/>
+    <data key="LG_channel_formName" value="名称"/>
+    <data key="LG_channel_formAddr" value="寄存器地址"/>
+    <data key="LG_channel_formType" value="数据类型"/>
+    <data key="LG_channel_formUnit" value="单位"/>
+    <data key="LG_channel_formScale" value="换算系数"/>
+    <data key="LG_channel_formRange" value="量程"/>
+    <data key="LG_channel_formRangeMin" value="量程下限"/>
+    <data key="LG_channel_formRangeMax" value="量程上限"/>
+    <data key="LG_channel_formDecimals" value="小数位"/>
+    <data key="LG_channel_formColor" value="曲线颜色"/>
+    <data key="LG_channel_formEnabled" value="启用采集"/>
+    <data key="LG_channel_typeUnsigned" value="无符号 16 位"/>
+    <data key="LG_channel_typeSigned" value="有符号 16 位"/>
+    <data key="LG_channel_btnAdd" value="新增通道"/>
+    <data key="LG_channel_btnRemove" value="删除通道"/>
+    <data key="LG_channel_btnApply" value="应用修改"/>
+    <data key="LG_channel_btnAppend" value="新增并应用"/>
+    <data key="LG_channel_btnClose" value="关闭"/>
+    <data key="LG_channel_btnColor" value="选择颜色…"/>
+    <data key="LG_channel_newNameFmt" value="通道 %1"/>
+    <data key="LG_channel_errNoSelection" value="请先在表格中选择一个通道"/>
+    <data key="LG_channel_errNameEmpty" value="通道名称不能为空"/>
+    <data key="LG_channel_errDuplicateAddr" value="寄存器地址已被其他通道占用"/>
+    <data key="LG_channel_errInvalidRange" value="量程上限必须大于下限"/>
+    <data key="LG_channel_removeTitle" value="删除通道"/>
+    <data key="LG_channel_removeTextFmt" value="确定删除通道「%1」？"/>
+    <data key="LG_alarm_ruleTitle" value="报警规则"/>
+    <data key="LG_alarm_ruleTip" value="通道工程值越过上限或下限时，连续达到设定次数才记录一条报警；恢复正常后记录一条解除。"/>
+    <data key="LG_alarm_ruleEnable" value="启用"/>
+    <data key="LG_alarm_ruleHigh" value="上限"/>
+    <data key="LG_alarm_ruleLow" value="下限"/>
+    <data key="LG_alarm_ruleDebounce" value="连续越限次数"/>
+    <data key="LG_alarm_msg_overHighFmt" value="%1 超过上限 %2（当前 %3）"/>
+    <data key="LG_alarm_msg_belowLowFmt" value="%1 低于下限 %2（当前 %3）"/>
+    <data key="LG_alarm_msg_recoverFmt" value="%1 已恢复正常（当前 %2）"/>
+    <data key="LG_alarm_paramTipFmt" value="参数：连续 %1 次越限记录 · 阈值可在「报警规则」中配置"/>
+    <data key="LG_history_title" value="历史数据查询"/>
+    <data key="LG_history_from" value="开始"/>
+    <data key="LG_history_to" value="结束"/>
+    <data key="LG_history_channelAll" value="全部通道"/>
+    <data key="LG_history_btnQuery" value="查询"/>
+    <data key="LG_history_btnClose" value="关闭"/>
+    <data key="LG_history_col_time" value="时间"/>
+    <data key="LG_history_col_channel" value="通道"/>
+    <data key="LG_history_col_raw" value="原始值"/>
+    <data key="LG_history_col_value" value="工程值"/>
+    <data key="LG_history_countFmt" value="共 %1 条"/>
+    <data key="LG_commlog_title" value="通信日志"/>
+    <data key="LG_commlog_pause" value="暂停刷新"/>
+    <data key="LG_commlog_btnClear" value="清空"/>
+    <data key="LG_commlog_btnExport" value="导出…"/>
+    <data key="LG_commlog_btnClose" value="关闭"/>
+    <data key="LG_commlog_tx" value="发送"/>
+    <data key="LG_commlog_rx" value="接收"/>
+    <data key="LG_commlog_exportTitle" value="导出通信日志"/>
+    <data key="LG_commlog_exportFilter" value="文本文件 (*.txt);;所有文件 (*.*)"/>
+    <data key="LG_commlog_exportDoneFmt" value="日志已导出到：%1"/>
+    <data key="LG_commlog_exportFailed" value="日志导出失败"/>
+    <data key="LG_menu_action_newProject" value="新建工程"/>
+    <data key="LG_menu_action_openProject" value="打开工程…"/>
+    <data key="LG_menu_action_saveProject" value="保存工程"/>
+    <data key="LG_menu_recentProjects" value="最近工程"/>
+    <data key="LG_menu_recentEmpty" value="（暂无）"/>
+    <data key="LG_menu_action_curveSettings" value="曲线设置…"/>
+    <data key="LG_menu_action_retention" value="数据保留设置…"/>
+    <data key="LG_menu_action_quickStart" value="快速上手"/>
+    <data key="LG_project_title" value="工程文件"/>
+    <data key="LG_project_filter" value="工程文件 (*.mhproj);;所有文件 (*.*)"/>
+    <data key="LG_project_openTitle" value="打开工程"/>
+    <data key="LG_project_saveTitle" value="保存工程"/>
+    <data key="LG_project_saveFailFmt" value="保存工程失败：%1"/>
+    <data key="LG_project_openFailFmt" value="打开工程失败：%1"/>
+    <data key="LG_project_parseFailFmt" value="工程文件格式错误：%1"/>
+    <data key="LG_project_noChannels" value="工程文件缺少通道配置"/>
+    <data key="LG_project_newConfirm" value="新建工程会清空当前通道配置，是否继续？"/>
+    <data key="LG_project_needStop" value="请先停止采集再切换工程"/>
+    <data key="LG_project_savedFmt" value="工程已保存：%1"/>
+    <data key="LG_retention_title" value="数据保留设置"/>
+    <data key="LG_retention_label" value="采样数据保留天数（0 表示不自动清理）："/>
+    <data key="LG_retention_doneFmt" value="已清理 %1 天前的采样数据"/>
+    <data key="LG_retention_off" value="已关闭自动清理"/>
+    <data key="LG_quickStart_title" value="快速上手"/>
+    <data key="LG_quickStart_text" value="1. 在「通道管理」中配置寄存器地址、量程与报警阈值；&#10;2. 在串口卡片选择端口并「连接」，随后「开始采集」；&#10;3. 实时数据表双击行可查看该通道历史数据；&#10;4. 「报警规则」可设置连续越限次数与上下限；&#10;5. 「工具 → 通信日志」查看收发帧，便于排查通信问题；&#10;6. 工程文件可通过「文件 → 保存工程」保存为 .mhproj，便于下次快速恢复。"/>
 </root>

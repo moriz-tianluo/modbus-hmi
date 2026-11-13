@@ -1,22 +1,38 @@
 #ifndef CHANNELMODEL_H
 #define CHANNELMODEL_H
 
+#include <QColor>
 #include <QObject>
 #include <QString>
 #include <QVector>
+
+// 寄存器数据类型：决定原始值按无符号还是有符号解释
+enum class ChannelDataType {
+    Unsigned16 = 0,  // 0~65535
+    Signed16 = 1,    // -32768~32767（最高位为符号位）
+};
 
 // 单通道配置与实时数据
 struct ChannelItem {
     QString name;                // 通道业务名称，如 "温度"、"压力"
     QString unit;                // 工程单位，如 "℃"、"MPa"
     quint16 registerAddress = 0; // 对应 Modbus 寄存器地址（起始 0）
+    ChannelDataType dataType = ChannelDataType::Unsigned16;  // 寄存器数据类型
     double scale = 0.1;          // 换算系数：工程值 = 原始寄存器值 × scale
     double rangeMin = 0.0;       // 量程下限（工程值），用于 percent() 计算
     double rangeMax = 100.0;     // 量程上限（工程值），用于 percent() 计算
+    int decimals = 2;            // 工程值显示小数位
+    QColor color;                // 曲线/色点颜色，无效时由各控件按索引取默认色
     bool enabled = true;         // 是否参与采集（Poller 只读取启用通道覆盖的连续段）
     quint16 rawValue = 0;        // 最近一轮采集写入的原始寄存器值
 
+    // ---- 报警规则 ----
+    bool alarmEnabled = false;   // 是否启用越限报警
+    double alarmHigh = 100.0;    // 报警上限（工程值）
+    double alarmLow = 0.0;       // 报警下限（工程值）
+
     // 原始值换算为工程值。例：rawValue=812, scale=0.1 → 81.2
+    // Signed16 且原始值最高位为 1 时按补码转换为负值
     double value() const;
     // 按量程归一化为百分比 [0, 100]，超出量程会被钳位。rangeMax-rangeMin <= 0 时返回 0
     double percent() const;
@@ -41,8 +57,16 @@ public:
     void setChannels(const QVector<ChannelItem> &channels);  // 整体替换，发射 channelsChanged
     void addChannel(const ChannelItem &item);   // 追加通道，发射 channelsChanged
     void removeChannel(int index);              // 按索引移除（越界静默忽略），发射 channelsChanged
+    // 替换指定通道的配置（保留该通道最近的 rawValue），越界静默忽略，发射 channelsChanged
+    void updateChannel(int index, const ChannelItem &item);
     void clear();                               // 清空全部通道，发射 channelsChanged
     int enabledCount() const;                   // 启用通道数量
+
+    // 切换单个通道的启用状态：只更新数据并发射 channelEnabledChanged，
+    // 不发射 channelsChanged，调用方（通道表）自行刷新该行样式，避免重建表格
+    void setChannelEnabled(int index, bool enabled);
+    // 批量切换全部通道的启用状态，发射 channelsChanged 以触发视图整体重建
+    void setAllChannelsEnabled(bool enabled);
 
     // 按寄存器地址查找通道下标，未找到返回 -1。线性扫描，通道数量大时慎用
     int indexOfAddress(quint16 address) const;
@@ -85,6 +109,7 @@ public:
 signals:
     void channelsChanged();                    // 通道列表整体变化（增/删/清空/导入/整体替换）
     void channelValueChanged(int index, double value);  // 某通道工程值更新：index 为通道索引，value = rawValue × scale
+    void channelEnabledChanged(int index, bool enabled);  // 单通道启用状态切换
     void bufferSizeChanged(int count);         // 缓存点数变化
 
 private:

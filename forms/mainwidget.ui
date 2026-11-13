@@ -7,13 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>1200</width>
-    <height>700</height>
+    <height>900</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>1200</width>
-    <height>700</height>
+    <height>900</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -66,40 +66,46 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,3,1">
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_3">
-       <item>
-        <widget class="ComSetWidget" name="comSetWidget" native="true"/>
-       </item>
-       <item>
-        <widget class="ModbusSetWidget" name="modbusSetWidget" native="true"/>
-       </item>
-       <item>
-        <widget class="ChannelSetWidget" name="channelSetWidget" native="true"/>
-       </item>
-      </layout>
+      <widget class="QWidget" name="leftPanelWidget" native="true">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="ComSetWidget" name="comSetWidget" native="true"/>
+        </item>
+        <item>
+         <widget class="ModbusSetWidget" name="modbusSetWidget" native="true"/>
+        </item>
+        <item>
+         <widget class="ChannelSetWidget" name="channelSetWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout_2">
-       <item>
-        <widget class="RealCurveWidget" name="realCurveWidget" native="true"/>
-       </item>
-       <item>
-        <widget class="RealDataWidget" name="realDataWidget" native="true"/>
-       </item>
-      </layout>
+      <widget class="QWidget" name="centerPanelWidget" native="true">
+       <layout class="QVBoxLayout" name="verticalLayout_2" stretch="5,3">
+        <item>
+         <widget class="RealCurveWidget" name="realCurveWidget" native="true"/>
+        </item>
+        <item>
+         <widget class="RealDataWidget" name="realDataWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout">
-       <item>
-        <widget class="CollectionStatisticsWodget" name="collectionStatisticsWidget" native="true"/>
-       </item>
-       <item>
-        <widget class="AlarmAndFaultWidget" name="alarmAndfaultWidget" native="true"/>
-       </item>
-       <item>
-        <widget class="DataSaveWidget" name="dataSaveWidget" native="true"/>
-       </item>
-      </layout>
+      <widget class="QWidget" name="rightPanelWidget" native="true">
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="CollectionStatisticsWodget" name="collectionStatisticsWidget" native="true"/>
+        </item>
+        <item>
+         <widget class="AlarmAndFaultWidget" name="alarmAndfaultWidget" native="true"/>
+        </item>
+        <item>
+         <widget class="DataSaveWidget" name="dataSaveWidget" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </item>
     </layout>
    </item>

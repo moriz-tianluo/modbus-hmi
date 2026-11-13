@@ -53,6 +53,10 @@ public slots:
     // 同时更新本对象缓存的 m_startAddress（用于 dataUpdated 信号带出）
     void updatePollingConfig(quint8 slaveId, quint16 startAddress, quint16 quantity);
 
+    // 下发串口卡片的响应超时与重试次数（UI 线程调用，跨线程队列化）。
+    // 重试由 ModbusRtu 帧级承担，Poller 层不再叠加，保证界面「重试 N 次」语义唯一
+    void applyCommunicationOptions(int responseTimeoutMs, int retryCount);
+
 signals:
     // ---- 串口状态 ----
     void portOpened(const QString &portName);              // open 成功或自动重连成功
@@ -69,6 +73,8 @@ signals:
     void pollFailed(ModbusError error, const QString &message);
     // 轮询运行状态变化：running=true 表示 Poller::start() 已执行且正在调度
     void pollingStateChanged(bool running);
+    // 通信日志：收发帧透传（outgoing=true 发送，false 接收）
+    void frameLogged(bool outgoing, const QByteArray &frame, qint64 timestampMs);
 
 private slots:
     void onPortOpened(const QString &portName);     // SerialPortHelper::portOpened → 更新 m_portOpen + 判断是否恢复采集

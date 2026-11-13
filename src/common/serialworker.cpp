@@ -87,6 +87,19 @@ void SerialWorker::updatePollingConfig(quint8 slaveId, quint16 startAddress, qui
     m_startAddress = startAddress;
 }
 
+void SerialWorker::applyCommunicationOptions(int responseTimeoutMs, int retryCount)
+{
+    // 兜底约束，避免 UI 传入手误参数导致长时间无响应
+    const int timeoutMs = qBound(50, responseTimeoutMs, 10000);
+    const int retries = qBound(0, retryCount, 10);
+
+    m_rtu->setResponseTimeout(timeoutMs);
+    m_rtu->setMaxRetries(retries);
+
+    // 帧级重试已覆盖界面「重试」语义，轮询层不再叠加，避免实际尝试次数被放大
+    m_poller->setMaxRetries(0);
+}
+
 void SerialWorker::onPortOpened(const QString &portName)
 {
     m_portOpen = true;
@@ -131,6 +144,8 @@ void SerialWorker::setupConnections()
     connect(m_serial, &SerialPortHelper::errorOccurred, this, &SerialWorker::onSerialError);
     connect(m_serial, &SerialPortHelper::reconnectStateChanged,
             this, &SerialWorker::reconnectStateChanged);
+    // 通信日志帧直接透传（跨线程由接收端自动队列化）
+    connect(m_serial, &SerialPortHelper::frameLogged, this, &SerialWorker::frameLogged);
 
     connect(m_poller, &ModbusPoller::roundCompleted, this, &SerialWorker::onRoundCompleted);
     // 信号到信号的直接转发

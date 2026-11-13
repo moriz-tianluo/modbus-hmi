@@ -30,6 +30,12 @@
     <data key="LG_tool_exportCsv" value="Export CSV"/>
     <data key="LG_tool_screenshot" value="Screenshot"/>
     <data key="LG_tool_statusRunning" value="Connected · Acquisition Running"/>
+    <data key="LG_tool_closeSerial" value="Close Port"/>
+    <data key="LG_tool_stopCollect" value="Stop Acquisition"/>
+    <data key="LG_tool_resumeCurve" value="Resume Curve"/>
+    <data key="LG_tool_statusOpened" value="Opened"/>
+    <data key="LG_tool_statusClosed" value="Closed"/>
+    <data key="LG_tool_statusReconnecting" value="Reconnecting"/>
     <data key="LG_card_serialSet" value="Serial Settings"/>
     <data key="LG_serial_port" value="Port"/>
     <data key="LG_serial_baud" value="Baud Rate"/>
@@ -41,9 +47,12 @@
     <data key="LG_modbus_funcCode" value="Function Code"/>
     <data key="LG_modbus_startAddr" value="Start Address"/>
     <data key="LG_modbus_quantity" value="Quantity"/>
+    <data key="LG_modbus_slave" value="Slave ID"/>
+    <data key="LG_modbus_interval" value="Interval"/>
     <data key="LG_modbus_tip" value="Slave 1 · 3.5 char frame gap · CRC16"/>
     <data key="LG_card_channelConfig" value="Channel Configuration"/>
     <data key="LG_channel_selectAll" value="Select All"/>
+    <data key="LG_channel_unselectAll" value="Deselect All"/>
     <data key="LG_table_channel" value="Channel"/>
     <data key="LG_table_addr" value="Address"/>
     <data key="LG_table_curValue" value="Value"/>
@@ -55,6 +64,7 @@
     <data key="LG_unit_mpa" value="MPa"/>
     <data key="LG_unit_m3h" value="m³/h"/>
     <data key="LG_unit_percent" value="%"/>
+    <data key="LG_unit_ms" value="ms"/>
     <data key="LG_channel_buffer" value="Buffer"/>
     <data key="LG_channel_saveSqlite" value="Store to SQLite"/>
     <data key="LG_channel_importConfig" value="Import Config"/>
@@ -68,7 +78,17 @@
     <data key="LG_curve_legend_flow" value="Flow"/>
     <data key="LG_curve_legend_level" value="Level"/>
     <data key="LG_curve_btnPause" value="Pause"/>
-    <data key="LG_curve_upperLimit" value="Upper limit 80%"/>
+    <data key="LG_curve_range_1min" value="1 min"/>
+    <data key="LG_curve_range_5min" value="5 min"/>
+    <data key="LG_curve_range_15min" value="15 min"/>
+    <data key="LG_curve_range_1hour" value="1 hour"/>
+    <data key="LG_curve_range_4hour" value="4 hours"/>
+    <data key="LG_curve_rangeTip" value="Curve retention window"/>
+    <data key="LG_curve_upperLimit" value="Upper limit %1%"/>
+    <data key="LG_curve_settingsTitle" value="Curve Settings"/>
+    <data key="LG_curve_lineWidth" value="Line Width"/>
+    <data key="LG_curve_showUpperLimit" value="Show upper limit line"/>
+    <data key="LG_curve_upperLimitValue" value="Upper limit value"/>
     <data key="LG_card_realData" value="Real-time Data"/>
     <data key="LG_realData_desc" value="t_sample · 4 channels · refresh 500 ms"/>
     <data key="LG_rd_col_channel" value="Channel"/>
@@ -79,9 +99,15 @@
     <data key="LG_rd_col_rtt" value="RTT"/>
     <data key="LG_rd_col_status" value="Status"/>
     <data key="LG_rd_col_updateTime" value="Updated"/>
+    <data key="LG_rd_statusWaiting" value="Waiting"/>
+    <data key="LG_rd_statusOk" value="OK"/>
+    <data key="LG_rd_statusDisabled" value="Disabled"/>
+    <data key="LG_rd_rttFmt" value="%1 ms"/>
     <data key="LG_status_overUpper" value="Over limit"/>
+    <data key="LG_status_belowLower" value="Below limit"/>
     <data key="LG_status_normal" value="Normal"/>
     <data key="LG_rd_dbTip" value="Stored in hmi.db · 12,477 rows · index (reg_addr, ts)"/>
+    <data key="LG_rd_dbTipFmt" value="Stored in hmi.db · %1 rows · index (ts)"/>
     <data key="LG_rd_doubleClickTip" value="Double-click a row to view its history curve"/>
     <data key="LG_card_collectStat" value="Acquisition Stats"/>
     <data key="LG_stat_totalReq" value="Total Requests"/>
@@ -103,6 +129,13 @@
     <data key="LG_alarm_btn_all" value="View All"/>
     <data key="LG_alarm_btn_clear" value="Clear"/>
     <data key="LG_alarm_totalCount" value="12 total"/>
+    <data key="LG_alarm_totalCountFmt" value="%1 total"/>
+    <data key="LG_alarm_dialogTitle" value="All Alarms and Faults"/>
+    <data key="LG_alarm_col_time" value="Time"/>
+    <data key="LG_alarm_col_type" value="Type"/>
+    <data key="LG_alarm_col_message" value="Description"/>
+    <data key="LG_alarm_btn_close" value="Close"/>
+    <data key="LG_alarm_msg_reconnecting" value="Serial disconnected, reconnecting (attempt %1)"/>
     <data key="LG_card_dataStore" value="Data Storage"/>
     <data key="LG_store_timeRange" value="Last 1 hour"/>
     <data key="LG_store_btn_query" value="Query"/>
@@ -113,6 +146,22 @@
     <data key="LG_store_range_6h" value="Last 6 hours"/>
     <data key="LG_store_range_24h" value="Last 24 hours"/>
     <data key="LG_store_range_7d" value="Last 7 days"/>
+    <data key="LG_store_range_custom" value="Custom…"/>
+    <data key="LG_store_customTitle" value="Custom Time Range"/>
+    <data key="LG_store_exportFieldsTitle" value="Export Fields"/>
+    <data key="LG_store_exportFieldsTip" value="Select the columns to export:"/>
+    <data key="LG_store_fieldTime" value="Time"/>
+    <data key="LG_store_fieldChannel" value="Channel"/>
+    <data key="LG_store_fieldRaw" value="Raw"/>
+    <data key="LG_store_fieldValue" value="Value"/>
+    <data key="LG_store_dbInfoFmt" value="%1 · %2 MB"/>
+    <data key="LG_store_countFmt" value="%1 rows recorded"/>
+    <data key="LG_store_exportTitle" value="Export Data"/>
+    <data key="LG_store_exportFilter" value="CSV Files (*.csv)"/>
+    <data key="LG_store_msgTitle" value="Data Storage"/>
+    <data key="LG_store_exportDoneFmt" value="Exported %1 rows to: %2"/>
+    <data key="LG_store_exportFailFmt" value="Export failed: %1"/>
+    <data key="LG_store_err_dbNotReady" value="Database is not ready"/>
     <data key="LG_statusbar_connInfo" value="Connected COM9 · 9600 8-N-1 · Slave 1"/>
     <data key="LG_statusbar_period" value="Sampling 500 ms"/>
     <data key="LG_statusbar_success" value="Success 12,477"/>
@@ -152,4 +201,123 @@
     <data key="LG_channel_jsonParseError" value="JSON parse failed"/>
     <data key="LG_channel_jsonInvalidConfig" value="Invalid config file format"/>
     <data key="LG_channel_addrNotContiguous" value="Enabled channel register addresses must be contiguous and unique"/>
+    <data key="LG_channel_summaryFmt" value="%1 channels · %2 enabled"/>
+    <data key="LG_channel_importDoneFmt" value="Imported %1 channels"/>
+    <data key="LG_channel_exportDoneFmt" value="Exported to: %1"/>
+    <data key="LG_channel_msgTitle" value="Channel Configuration"/>
+    <data key="LG_channel_importTitle" value="Import Channel Configuration"/>
+    <data key="LG_channel_importFilter" value="JSON Files (*.json)"/>
+    <data key="LG_channel_exportTitle" value="Export Channel Configuration"/>
+    <data key="LG_channel_exportFilter" value="JSON Files (*.json)"/>
+    <data key="LG_menu_action_exportCsv" value="Export Data (CSV)…"/>
+    <data key="LG_menu_action_screenshot" value="Save Screenshot…"/>
+    <data key="LG_menu_action_exit" value="Exit"/>
+    <data key="LG_menu_action_selectAll" value="Select All Channels"/>
+    <data key="LG_menu_action_unselectAll" value="Unselect All Channels"/>
+    <data key="LG_menu_action_refreshPort" value="Refresh Ports"/>
+    <data key="LG_menu_action_connect" value="Connect"/>
+    <data key="LG_menu_action_disconnect" value="Disconnect"/>
+    <data key="LG_menu_action_startCollect" value="Start Acquisition"/>
+    <data key="LG_menu_action_stopCollect" value="Stop Acquisition"/>
+    <data key="LG_menu_action_showLeft" value="Show Left Panel"/>
+    <data key="LG_menu_action_showCurve" value="Show Real-time Curve"/>
+    <data key="LG_menu_action_showData" value="Show Real-time Data"/>
+    <data key="LG_menu_action_showRight" value="Show Right Panel"/>
+    <data key="LG_menu_action_openDataDir" value="Open Data Folder"/>
+    <data key="LG_menu_action_about" value="About"/>
+    <data key="LG_curve_btnResume" value="Resume Curve"/>
+    <data key="LG_screenshot_title" value="Save Screenshot"/>
+    <data key="LG_screenshot_filter" value="Image Files (*.png)"/>
+    <data key="LG_screenshot_doneFmt" value="Screenshot saved to: %1"/>
+    <data key="LG_screenshot_failFmt" value="Failed to save screenshot: %1"/>
+    <data key="LG_about_title" value="About"/>
+    <data key="LG_about_text" value="%1&#10;Qt version: %2"/>
+    <data key="LG_menu_action_channelManager" value="Channel Manager…"/>
+    <data key="LG_menu_action_alarmRule" value="Alarm Rules…"/>
+    <data key="LG_menu_action_commLog" value="Communication Log…"/>
+    <data key="LG_channel_mgrTitle" value="Channel Manager"/>
+    <data key="LG_channel_formTitle" value="Channel Properties"/>
+    <data key="LG_channel_formName" value="Name"/>
+    <data key="LG_channel_formAddr" value="Register Address"/>
+    <data key="LG_channel_formType" value="Data Type"/>
+    <data key="LG_channel_formUnit" value="Unit"/>
+    <data key="LG_channel_formScale" value="Scale Factor"/>
+    <data key="LG_channel_formRange" value="Range"/>
+    <data key="LG_channel_formRangeMin" value="Range Min"/>
+    <data key="LG_channel_formRangeMax" value="Range Max"/>
+    <data key="LG_channel_formDecimals" value="Decimals"/>
+    <data key="LG_channel_formColor" value="Curve Color"/>
+    <data key="LG_channel_formEnabled" value="Enable Acquisition"/>
+    <data key="LG_channel_typeUnsigned" value="Unsigned 16-bit"/>
+    <data key="LG_channel_typeSigned" value="Signed 16-bit"/>
+    <data key="LG_channel_btnAdd" value="Add Channel"/>
+    <data key="LG_channel_btnRemove" value="Remove Channel"/>
+    <data key="LG_channel_btnApply" value="Apply Changes"/>
+    <data key="LG_channel_btnAppend" value="Add and Apply"/>
+    <data key="LG_channel_btnClose" value="Close"/>
+    <data key="LG_channel_btnColor" value="Pick Color…"/>
+    <data key="LG_channel_newNameFmt" value="Channel %1"/>
+    <data key="LG_channel_errNoSelection" value="Please select a channel in the table first"/>
+    <data key="LG_channel_errNameEmpty" value="Channel name cannot be empty"/>
+    <data key="LG_channel_errDuplicateAddr" value="Register address is already used by another channel"/>
+    <data key="LG_channel_errInvalidRange" value="Range max must be greater than range min"/>
+    <data key="LG_channel_removeTitle" value="Remove Channel"/>
+    <data key="LG_channel_removeTextFmt" value="Remove channel \"%1\"?"/>
+    <data key="LG_alarm_ruleTitle" value="Alarm Rules"/>
+    <data key="LG_alarm_ruleTip" value="A channel alarm is recorded only after the engineering value exceeds the high/low limit for the configured consecutive cycles. A recovery record is added when it returns to normal."/>
+    <data key="LG_alarm_ruleEnable" value="Enable"/>
+    <data key="LG_alarm_ruleHigh" value="High Limit"/>
+    <data key="LG_alarm_ruleLow" value="Low Limit"/>
+    <data key="LG_alarm_ruleDebounce" value="Consecutive Violations"/>
+    <data key="LG_alarm_msg_overHighFmt" value="%1 exceeded high limit %2 (current %3)"/>
+    <data key="LG_alarm_msg_belowLowFmt" value="%1 fell below low limit %2 (current %3)"/>
+    <data key="LG_alarm_msg_recoverFmt" value="%1 returned to normal (current %2)"/>
+    <data key="LG_alarm_paramTipFmt" value="Rule: record after %1 consecutive violations · thresholds in Alarm Rules"/>
+    <data key="LG_history_title" value="Historical Data Query"/>
+    <data key="LG_history_from" value="From"/>
+    <data key="LG_history_to" value="To"/>
+    <data key="LG_history_channelAll" value="All Channels"/>
+    <data key="LG_history_btnQuery" value="Query"/>
+    <data key="LG_history_btnClose" value="Close"/>
+    <data key="LG_history_col_time" value="Time"/>
+    <data key="LG_history_col_channel" value="Channel"/>
+    <data key="LG_history_col_raw" value="Raw"/>
+    <data key="LG_history_col_value" value="Value"/>
+    <data key="LG_history_countFmt" value="%1 records"/>
+    <data key="LG_commlog_title" value="Communication Log"/>
+    <data key="LG_commlog_pause" value="Pause Refresh"/>
+    <data key="LG_commlog_btnClear" value="Clear"/>
+    <data key="LG_commlog_btnExport" value="Export…"/>
+    <data key="LG_commlog_btnClose" value="Close"/>
+    <data key="LG_commlog_tx" value="TX"/>
+    <data key="LG_commlog_rx" value="RX"/>
+    <data key="LG_commlog_exportTitle" value="Export Communication Log"/>
+    <data key="LG_commlog_exportFilter" value="Text Files (*.txt);;All Files (*.*)"/>
+    <data key="LG_commlog_exportDoneFmt" value="Log exported to: %1"/>
+    <data key="LG_commlog_exportFailed" value="Failed to export log"/>
+    <data key="LG_menu_action_newProject" value="New Project"/>
+    <data key="LG_menu_action_openProject" value="Open Project…"/>
+    <data key="LG_menu_action_saveProject" value="Save Project"/>
+    <data key="LG_menu_recentProjects" value="Recent Projects"/>
+    <data key="LG_menu_recentEmpty" value="(none)"/>
+    <data key="LG_menu_action_curveSettings" value="Curve Settings…"/>
+    <data key="LG_menu_action_retention" value="Data Retention…"/>
+    <data key="LG_menu_action_quickStart" value="Quick Start"/>
+    <data key="LG_project_title" value="Project File"/>
+    <data key="LG_project_filter" value="Project Files (*.mhproj);;All Files (*.*)"/>
+    <data key="LG_project_openTitle" value="Open Project"/>
+    <data key="LG_project_saveTitle" value="Save Project"/>
+    <data key="LG_project_saveFailFmt" value="Failed to save project: %1"/>
+    <data key="LG_project_openFailFmt" value="Failed to open project: %1"/>
+    <data key="LG_project_parseFailFmt" value="Invalid project file: %1"/>
+    <data key="LG_project_noChannels" value="Project file has no channel configuration"/>
+    <data key="LG_project_newConfirm" value="Creating a new project clears the current channels. Continue?"/>
+    <data key="LG_project_needStop" value="Stop acquisition before switching projects"/>
+    <data key="LG_project_savedFmt" value="Project saved: %1"/>
+    <data key="LG_retention_title" value="Data Retention"/>
+    <data key="LG_retention_label" value="Keep sampled data for (days, 0 = never purge):"/>
+    <data key="LG_retention_doneFmt" value="Purged samples older than %1 days"/>
+    <data key="LG_retention_off" value="Automatic purge disabled"/>
+    <data key="LG_quickStart_title" value="Quick Start"/>
+    <data key="LG_quickStart_text" value="1. Configure register address, range and alarm thresholds in Channel Manager;&#10;2. Pick a serial port, click Connect, then Start Acquisition;&#10;3. Double-click a row in the real-time table to view its history;&#10;4. Alarm Rules define the consecutive-violation count and limits;&#10;5. Tools → Communication Log shows TX/RX frames for troubleshooting;&#10;6. Save the workspace as a .mhproj file via File → Save Project."/>
 </root>

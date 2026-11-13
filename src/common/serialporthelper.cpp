@@ -1,5 +1,6 @@
 #include "serialporthelper.h"
 
+#include <QDateTime>
 #include <QSerialPortInfo>
 #include <QTimer>
 #include <QtMath>
@@ -98,6 +99,7 @@ bool SerialPortHelper::send(const QByteArray &data)
         return false;
     }
 
+    emit frameLogged(true, data, QDateTime::currentMSecsSinceEpoch());
     emit bytesWritten(written);
     return true;
 }
@@ -169,6 +171,7 @@ void SerialPortHelper::onFrameTimeout()
 
     const QByteArray frame = m_buffer;
     m_buffer.clear();
+    emit frameLogged(false, frame, QDateTime::currentMSecsSinceEpoch());
     emit frameReceived(frame);
 }
 
