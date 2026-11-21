@@ -31,6 +31,9 @@ public:
     // 刷新「最近工程」子菜单内容（最多 5 条，最新在前）
     void setRecentProjects(const QStringList &paths);
 
+    // 同步语言菜单的勾选状态：-1 跟随系统，0 中文，1 英文
+    void setLanguageType(int languageType);
+
 signals:
     // ---- 文件 ----
     void exportCsvTriggered();
@@ -55,6 +58,15 @@ signals:
     // 通道管理 / 报警规则
     void channelManagerTriggered();
     void alarmRuleTriggered();
+    // 写寄存器 / 线圈（05/06/15/16）
+    void writeRegisterTriggered();
+    // 报警记录 / 数据库维护
+    void alarmHistoryTriggered();
+    void databaseBackupTriggered();
+    void databaseVacuumTriggered();
+    // 曲线导出
+    void curveScreenshotTriggered();
+    void curveExportTriggered();
 
     // ---- 视图（勾选状态即显示状态）----
     void leftPanelToggled(bool visible);
@@ -72,6 +84,8 @@ signals:
     void aboutTriggered();
     // 快速上手说明
     void quickStartTriggered();
+    // 界面语言切换：-1 跟随系统，0 中文，1 英文
+    void languageTriggered(int languageType);
 
 private:
     // 创建 6 个菜单并挂到顶部按钮上
@@ -87,6 +101,8 @@ private:
     void retranslateMenus();
     // 最近工程动作统一入口：从发送者携带的路径发起打开请求
     void onRecentActionTriggered();
+    // 语言动作统一入口：从发送者携带的语言编号发起切换请求
+    void onLanguageActionTriggered();
 
 private:
     Ui::menuWidget *ui;
@@ -118,6 +134,12 @@ private:
     QAction *m_stopCollectAction = nullptr;
     QAction *m_channelManagerAction = nullptr;
     QAction *m_alarmRuleAction = nullptr;
+    QAction *m_writeRegisterAction = nullptr;
+    QAction *m_alarmHistoryAction = nullptr;
+    QAction *m_databaseBackupAction = nullptr;
+    QAction *m_databaseVacuumAction = nullptr;
+    QAction *m_curveScreenshotAction = nullptr;
+    QAction *m_curveExportAction = nullptr;
 
     QAction *m_showLeftAction = nullptr;
     QAction *m_showCurveAction = nullptr;
@@ -130,6 +152,11 @@ private:
     QAction *m_retentionAction = nullptr;
     QAction *m_aboutAction = nullptr;
     QAction *m_quickStartAction = nullptr;
+
+    QMenu *m_languageMenu = nullptr;
+    QAction *m_languageAutoAction = nullptr;
+    QAction *m_languageZhAction = nullptr;
+    QAction *m_languageEnAction = nullptr;
 };
 
 #endif // MENUWIDGET_H

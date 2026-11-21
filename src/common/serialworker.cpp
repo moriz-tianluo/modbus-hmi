@@ -10,6 +10,8 @@ SerialWorker::SerialWorker(QObject *parent)
     // 跨线程队列连接需要注册自定义参数类型
     qRegisterMetaType<SerialPortConfig>("SerialPortConfig");
     qRegisterMetaType<ModbusFunctionCode>("ModbusFunctionCode");
+    qRegisterMetaType<PollTask>("PollTask");
+    qRegisterMetaType<QVector<PollTask>>("QVector<PollTask>");
 
     setupConnections();
 }
@@ -59,6 +61,8 @@ void SerialWorker::startPolling(quint8 slaveId, ModbusFunctionCode code,
         return;
     }
 
+    // 单任务模式：清空任务列表，Poller 回退到 slaveId/start/quantity 配置
+    m_poller->setTasks(QVector<PollTask>());
     m_poller->setSlaveId(slaveId);
     m_poller->setFunctionCode(code);
     m_poller->setStartAddress(startAddress);
@@ -68,6 +72,73 @@ void SerialWorker::startPolling(quint8 slaveId, ModbusFunctionCode code,
 
     m_poller->start();
     setPolling(true);
+}
+
+void SerialWorker::startPollingTasks(const QVector<PollTask> &tasks, int intervalMs)
+{
+    if (!m_portOpen) {
+        emit pollFailed(ModbusError::SerialError, LANGUAGE("LG_modbus_serialNotOpen"));
+        return;
+    }
+    if (tasks.isEmpty()) {
+        emit pollFailed(ModbusError::IllegalQuantity, LANGUAGE("LG_modbus_noPollTask"));
+        return;
+    }
+
+    m_poller->setTasks(tasks);
+    m_poller->setInterval(intervalMs);
+    m_poller->start();
+    setPolling(true);
+}
+
+void SerialWorker::writeSingleRegister(quint8 slaveId, quint16 address, quint16 value)
+{
+    beginWrite(slaveId);
+    m_rtu->writeSingleRegister(address, value);
+}
+
+void SerialWorker::writeMultipleRegisters(quint8 slaveId, quint16 startAddress,
+                                          const QVector<quint16> &values)
+{
+    beginWrite(slaveId);
+    m_rtu->writeMultipleRegisters(startAddress, values);
+}
+
+void SerialWorker::writeSingleCoil(quint8 slaveId, quint16 address, bool on)
+{
+    beginWrite(slaveId);
+    m_rtu->writeSingleCoil(address, on);
+}
+
+void SerialWorker::writeMultipleCoils(quint8 slaveId, quint16 startAddress,
+                                      const QVector<bool> &values)
+{
+    beginWrite(slaveId);
+    m_rtu->writeMultipleCoils(startAddress, values);
+}
+
+void SerialWorker::beginWrite(quint8 slaveId)
+{
+    m_writePending = true;
+    m_resumeAfterWrite = m_polling;
+    if (m_polling) {
+        // 写事务期间暂停轮询，保证同一时刻只有一笔事务占用串口
+        m_poller->stop();
+        setPolling(false);
+    }
+    m_rtu->setSlaveId(slaveId);
+}
+
+void SerialWorker::endWrite()
+{
+    m_writePending = false;
+
+    if (m_resumeAfterWrite && m_portOpen) {
+        m_resumeAfterWrite = false;
+        m_poller->start();
+        setPolling(true);
+    }
+    m_resumeAfterWrite = false;
 }
 
 void SerialWorker::stopPolling()
@@ -132,9 +203,27 @@ void SerialWorker::onSerialError(QSerialPort::SerialPortError error, const QStri
     emit portError(error, message);
 }
 
-void SerialWorker::onRoundCompleted(const QVector<quint16> &values, qint64 rttMs)
+void SerialWorker::onRoundCompleted(quint8 slaveId, quint16 startAddress,
+                                    const QVector<quint16> &values, qint64 rttMs)
 {
-    emit dataUpdated(m_startAddress, values, rttMs);
+    emit dataUpdated(slaveId, startAddress, values, rttMs);
+}
+
+void SerialWorker::onWriteCompleted(quint8 functionCode, quint16 startAddress,
+                                    quint16 quantity)
+{
+    endWrite();
+    emit writeSucceeded(functionCode, startAddress, quantity);
+}
+
+void SerialWorker::onWriteRequestFailed(ModbusError error, const QString &message)
+{
+    // 只有写事务期间才由本槽接管，普通轮询失败仍走 pollFailed
+    if (!m_writePending) {
+        return;
+    }
+    endWrite();
+    emit writeFailed(error, message);
 }
 
 void SerialWorker::setupConnections()
@@ -150,6 +239,10 @@ void SerialWorker::setupConnections()
     connect(m_poller, &ModbusPoller::roundCompleted, this, &SerialWorker::onRoundCompleted);
     // 信号到信号的直接转发
     connect(m_poller, &ModbusPoller::roundFailed, this, &SerialWorker::pollFailed);
+
+    // 写事务结果：写操作会让 Poller 暂时停止，因此失败/成功都要在这里恢复采集
+    connect(m_rtu, &ModbusRtu::writeCompleted, this, &SerialWorker::onWriteCompleted);
+    connect(m_rtu, &ModbusRtu::requestFailed, this, &SerialWorker::onWriteRequestFailed);
 }
 
 void SerialWorker::setPolling(bool running)

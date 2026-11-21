@@ -80,6 +80,8 @@ void ProjectConfig::load()
         m_settings->value(QStringLiteral("curveWindowSeconds"), m_curveWindowSeconds).toInt();
     m_alarmDebounceCount =
         m_settings->value(QStringLiteral("alarmDebounceCount"), m_alarmDebounceCount).toInt();
+    m_languageType =
+        m_settings->value(QStringLiteral("languageType"), m_languageType).toInt();
     m_settings->endGroup();
 
     // ---- 工程文件与数据保留 ----
@@ -113,6 +115,8 @@ void ProjectConfig::load()
     m_curveLineWidth = qBound(1, m_curveLineWidth, 6);
     m_curveUpperLimit = qBound(0.0, m_curveUpperLimit, 100.0);
     m_dataRetentionDays = qMax(0, m_dataRetentionDays);
+    // 语言取值收敛到 -1/0/1，防止手改 ini 造成非法值
+    m_languageType = qBound(-1, m_languageType, 1);
 }
 
 void ProjectConfig::save()
@@ -143,6 +147,7 @@ void ProjectConfig::save()
     m_settings->setValue(QStringLiteral("bufferSize"), m_bufferSize);
     m_settings->setValue(QStringLiteral("curveWindowSeconds"), m_curveWindowSeconds);
     m_settings->setValue(QStringLiteral("alarmDebounceCount"), m_alarmDebounceCount);
+    m_settings->setValue(QStringLiteral("languageType"), m_languageType);
     m_settings->endGroup();
 
     m_settings->beginGroup(QStringLiteral("project"));
@@ -310,4 +315,14 @@ bool ProjectConfig::curveUpperLimitVisible() const
 void ProjectConfig::setCurveUpperLimitVisible(bool visible)
 {
     m_curveUpperLimitVisible = visible;
+}
+
+int ProjectConfig::languageType() const
+{
+    return m_languageType;
+}
+
+void ProjectConfig::setLanguageType(int type)
+{
+    m_languageType = qBound(-1, type, 1);
 }

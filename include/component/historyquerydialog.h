@@ -28,6 +28,9 @@ public:
     // 以指定时间范围与通道打开对话框（channelIndex < 0 表示全部通道）
     void openWithRange(qint64 fromMs, qint64 toMs, int channelIndex);
 
+    // 单次查询最大行数：MainWidget 与对话框共用，超过后提示用户缩小范围
+    static constexpr int kQueryLimit = 5000;
+
 signals:
     // 请求数据库线程查询采样记录
     void queryRequested(qint64 fromMs, qint64 toMs, int channelIndex);
@@ -63,8 +66,6 @@ private:
     QLabel *m_countLabel = nullptr;
     QTableWidget *m_table = nullptr;
     QCustomPlot *m_plot = nullptr;
-
-    static constexpr int kQueryLimit = 5000;  // 单次查询最大行数
 };
 
 #endif // HISTORYQUERYDIALOG_H

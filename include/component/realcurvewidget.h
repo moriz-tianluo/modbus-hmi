@@ -61,6 +61,12 @@ public slots:
     // 一轮采集的所有通道数据分发完毕后调用：合并本轮 replot，避免每通道重绘一次
     void endRoundUpdate();
 
+    // ---- 曲线导出 ----
+    // 保存曲线截图为 PNG
+    bool exportScreenshot(const QString &filePath);
+    // 导出当前曲线缓冲区为 CSV（长表：时间/通道/百分比/工程值）
+    bool exportCurveCsv(const QString &filePath);
+
 signals:
     // 暂停状态变化（本卡片按钮或被 MainWidget 调用后统一广播）
     void pauseStateChanged(bool paused);
@@ -78,10 +84,22 @@ private slots:
     void onAxisXRangeChanged(const QCPRange &newRange);
     // 双击图表：恢复自动跟随最新数据
     void onPlotDoubleClicked(QMouseEvent *event);
+    // 鼠标移动：十字光标读数
+    void onPlotMouseMove(QMouseEvent *event);
 
 private:
-    // 初始化图表：坐标轴配置、4 条 graph、80% 上限参考线
+    // 初始化图表：坐标轴配置、多条 graph、上限参考线、副轴与十字光标
     void initPlot();
+    // 初始化图例：复用 .ui 中前 4 个标签，通道超过 4 个时动态补充
+    void initLegend();
+    // 初始化十字光标（竖线 + 读数文本框）
+    void initCrosshair();
+    // 刷新右侧工程量副轴：以高亮通道（或首个启用通道）的量程做刻度
+    void refreshEngineeringAxis();
+    // 百分比 → 工程值
+    double percentToEngineering(int channelIndex, double percent) const;
+    // 隐藏十字光标
+    void hideCrosshair();
     // 创建一条 graph 并设置颜色/线型/数据缓冲
     QCPGraph *addGraph(const QColor &color, const QPen &pen) const;
     // 生成一条正弦示例曲线，便于设计阶段预览
@@ -105,11 +123,20 @@ private:
 
     Ui::RealCurveWidget *ui;
 
-    // 曲线数组（最多 4 条，对应 ChannelModel 前 4 个通道）
-    static constexpr int kGraphCount = 4;
+    // 曲线数组（最多 8 条，对应 ChannelModel 前 8 个通道）
+    static constexpr int kGraphCount = 8;
     QCPGraph *m_graphs[kGraphCount] = {};
     QCPItemStraightLine *m_limitLine = nullptr;  // 上限参考线
     QCPItemText *m_limitLabel = nullptr;         // 上限参考线右侧文字
+
+    // 图例：前 4 个来自 .ui，后 4 个在 initLegend() 中动态创建
+    QLabel *m_legendLabels[kGraphCount] = {};
+    QLabel *m_legendDashes[kGraphCount] = {};
+
+    // 十字光标：竖直参考线 + 左上角读数
+    QCPItemStraightLine *m_crosshairLine = nullptr;
+    QCPItemText *m_crosshairText = nullptr;
+    QCPAxis *m_engineeringAxis = nullptr;        // 右侧工程量副轴
 
     // 横轴显示的时间窗口（秒），运行期可调；超过此值的旧点在 append 时被移除
     static constexpr int kMinTimeWindowSeconds = 30;     // 最短 30 秒

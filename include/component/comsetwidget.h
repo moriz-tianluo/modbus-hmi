@@ -34,9 +34,15 @@ public:
     // 启动时用持久化配置回填界面（端口/波特率/帧格式/超时/重试）
     void applySettings(const SerialPortConfig &config, int responseTimeoutMs, int retryCount);
 
+signals:
+    // 用户修改任一串口参数时发出，MainWidget 用于标记工程「未保存」
+    void settingsChanged();
+
 private:
     // 把 SerialPortConfig 的帧参数拼成下拉框文本，如 "8-N-1"
     QString frameTextOf(const SerialPortConfig &config) const;
+    // 监听各参数下拉框，统一转成 settingsChanged 信号
+    void initConnections();
 
 private:
     Ui::ComSetWidget *ui;

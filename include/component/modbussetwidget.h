@@ -39,6 +39,16 @@ public:
     void applySettings(int functionCodeIndex, quint16 startAddress, quint16 quantity,
                        quint8 slaveId, int intervalMs);
 
+signals:
+    // 用户修改任一采集参数时发出，MainWidget 用于标记工程「未保存」
+    void settingsChanged();
+
+private:
+    // 监听各参数下拉框，统一转成 settingsChanged 信号
+    void initConnections();
+    // 禁用当前版本不支持的 01/02 功能码选项
+    void disableUnsupportedFunctionCodes();
+
 private:
     Ui::ModbusSetWidget *ui;
 };

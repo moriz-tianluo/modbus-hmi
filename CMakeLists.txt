@@ -4,12 +4,12 @@ project(${PROJECT_NAME} LANGUAGES CXX)
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml Charts sql serialport PrintSupport)
 find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
+# find_package(Qt6 REQUIRED COMPONENTS Core)
+# find_package(Qt6 REQUIRED COMPONENTS Core)
+# find_package(Qt6 REQUIRED COMPONENTS Core)
+# find_package(Qt6 REQUIRED COMPONENTS Core)
+# find_package(Qt6 REQUIRED COMPONENTS Core)
+# find_package(Qt6 REQUIRED COMPONENTS Core)
 
 qt_standard_project_setup()
 
@@ -38,6 +38,8 @@ set(SOURCE_FILES
     src/component/historyquerydialog.cpp
     src/component/commlogdialog.cpp
     src/component/curvesettingsdialog.cpp
+    src/component/writeregisterdialog.cpp
+    src/component/alarmhistorydialog.cpp
     3rdparty/QCustomPlot/qcustomplot.cpp
     src/common/projectconfig.cpp
     src/common/serialworker.cpp
@@ -73,6 +75,8 @@ set(HEADER_FILES
     include/component/historyquerydialog.h
     include/component/commlogdialog.h
     include/component/curvesettingsdialog.h
+    include/component/writeregisterdialog.h
+    include/component/alarmhistorydialog.h
     3rdparty/QCustomPlot/qcustomplot.h
     include/common/projectconfig.h
     include/common/serialworker.h
@@ -163,8 +167,8 @@ install(SCRIPT ${deploy_script})
 # ========== 下面添加拷贝文件夹代码 ==========
 # 源：项目根目录/language
 set(LANG_SOURCE_DIR "${CMAKE_SOURCE_DIR}/language")
-# 目标：exe所在目录/language
-set(LANG_TARGET_DIR "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/language")
+# 目标：exe所在目录/language（多配置生成器下 exe 位于 Debug/Release 子目录）
+set(LANG_TARGET_DIR "$<TARGET_FILE_DIR:${PROJECT_NAME}>/language")
 
 # 编译完成自动拷贝整个文件夹
 add_custom_command(
@@ -174,4 +178,10 @@ add_custom_command(
     ${LANG_SOURCE_DIR}
     ${LANG_TARGET_DIR}
 )
+
+# ========== 单元测试（Qt Test + CTest） ==========
+include(CTest)
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 

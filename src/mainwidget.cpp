@@ -20,10 +20,13 @@
 #include "component/commlogdialog.h"
 #include "component/curvesettingsdialog.h"
 #include "component/historyquerydialog.h"
+#include "component/writeregisterdialog.h"
+#include "component/alarmhistorydialog.h"
 
 #include "common/projectconfig.h"
 
 #include <QCloseEvent>
+#include <QApplication>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QDebug>
@@ -76,7 +79,8 @@ MainWidget::~MainWidget()
 
 void MainWidget::languageChange()
 {
-    // 预留：语言变化时通知所有子控件刷新
+    // 语言切换后刷新主窗口自身文本
+    updateWindowTitle();
 }
 
 // ============== 初始化主窗口 ==============
@@ -85,6 +89,8 @@ void MainWidget::init()
 {
     initProjectConfig();
     initUI();
+    // 应用已保存的界面语言（子控件已由 setupUi 创建）
+    applyLanguage(m_projectConfig->languageType(), false);
     initSystemTray();
     initSignals();
     initWorker();
@@ -92,6 +98,7 @@ void MainWidget::init()
     initWorkerConnections();
     initChannelConnections();
     initMenuConnections();
+    initProjectDirtyTracking();
     // 配置回填放在所有控件与连接就绪之后，避免回填触发的信号无人接收
     restoreProjectConfig();
 
@@ -116,6 +123,9 @@ void MainWidget::restoreProjectConfig()
     if (m_projectConfig == nullptr) {
         return;
     }
+
+    // 回填界面会触发参数控件信号，期间不标记工程为「未保存」
+    m_suppressProjectDirty = true;
 
     // 1. 窗口几何（首次启动时为空，保持默认尺寸）
     const QByteArray geometry = m_projectConfig->windowGeometry();
@@ -153,6 +163,9 @@ void MainWidget::restoreProjectConfig()
     // 6. 报警去抖次数
     m_alarmDebounceCount = m_projectConfig->alarmDebounceCount();
     updateAlarmParamTip();
+
+    m_suppressProjectDirty = false;
+    clearProjectDirty();
 }
 
 void MainWidget::persistProjectConfig()
@@ -201,6 +214,12 @@ void MainWidget::onChannelConfigPathChanged(const QString &path)
 
 void MainWidget::closeEvent(QCloseEvent *event)
 {
+    // 有未保存修改时先询问；取消则保持窗口打开
+    if (!maybeSaveProject()) {
+        event->ignore();
+        return;
+    }
+
     persistProjectConfig();
     BaseWidget::closeEvent(event);
 }
@@ -306,6 +325,8 @@ void MainWidget::initDatabase()
     connect(m_saveDataThread, &QThread::finished, m_saveData, &QObject::deleteLater);
     connect(m_saveData, &SaveDataSQL::databaseError,
             this, &MainWidget::onDatabaseError);
+    connect(m_saveData, &SaveDataSQL::maintenanceFinished,
+            this, &MainWidget::onDatabaseMaintenanceFinished);
 
     m_saveDataThread->start();
 
@@ -419,10 +440,17 @@ void MainWidget::initWorkerConnections()
             this, &MainWidget::onWorkerPollFailed);
     connect(m_worker, &SerialWorker::dataUpdated,
             this, &MainWidget::onWorkerDataUpdated);
+    connect(m_worker, &SerialWorker::writeSucceeded,
+            this, &MainWidget::onWorkerWriteSucceeded);
+    connect(m_worker, &SerialWorker::writeFailed,
+            this, &MainWidget::onWorkerWriteFailed);
 
     // ---- 报警记录 → 数据库线程（去抖后的新记录才落库）----
     connect(ui->alarmAndfaultWidget, &AlarmAndFaultWidget::alarmRecordAdded,
             m_saveData, &SaveDataSQL::enqueueAlarm, Qt::QueuedConnection);
+    // 报警提醒：声音 + 托盘气泡（数据库落库之外的用户感知通道）
+    connect(ui->alarmAndfaultWidget, &AlarmAndFaultWidget::alarmRecordAdded,
+            this, &MainWidget::onAlarmRecordAdded);
 
     // ---- 数据存储卡片 → 数据库线程（查询记录数 / 导出 CSV），结果回流到卡片 ----
     connect(ui->dataSaveWidget, &DataSaveWidget::recordCountRequested,
@@ -491,6 +519,18 @@ void MainWidget::initMenuConnections()
             this, &MainWidget::onChannelManagerTriggered);
     connect(ui->MenuWidget, &menuWidget::alarmRuleTriggered,
             this, &MainWidget::onAlarmRuleTriggered);
+    connect(ui->MenuWidget, &menuWidget::writeRegisterTriggered,
+            this, &MainWidget::onWriteRegisterTriggered);
+    connect(ui->MenuWidget, &menuWidget::alarmHistoryTriggered,
+            this, &MainWidget::onAlarmHistoryTriggered);
+    connect(ui->MenuWidget, &menuWidget::databaseBackupTriggered,
+            this, &MainWidget::onDatabaseBackupTriggered);
+    connect(ui->MenuWidget, &menuWidget::databaseVacuumTriggered,
+            this, &MainWidget::onDatabaseVacuumTriggered);
+    connect(ui->MenuWidget, &menuWidget::curveScreenshotTriggered,
+            this, &MainWidget::onCurveScreenshotTriggered);
+    connect(ui->MenuWidget, &menuWidget::curveExportTriggered,
+            this, &MainWidget::onCurveExportTriggered);
 
     // ---- 视图 ----
     connect(ui->MenuWidget, &menuWidget::leftPanelToggled,
@@ -515,6 +555,8 @@ void MainWidget::initMenuConnections()
             this, &MainWidget::onAboutTriggered);
     connect(ui->MenuWidget, &menuWidget::quickStartTriggered,
             this, &MainWidget::onQuickStartTriggered);
+    connect(ui->MenuWidget, &menuWidget::languageTriggered,
+            this, &MainWidget::onLanguageTriggered);
 
     // ---- 历史查询入口：实时数据表双击 / 数据存储卡片查询 ----
     connect(ui->realDataWidget, &RealDataWidget::historyRequested,
@@ -548,7 +590,7 @@ void MainWidget::onClosePortRequested()
 
 void MainWidget::onStartCollectRequested()
 {
-    // 前置校验：通道地址必须连续（Poller 按连续段读取）
+    // 前置校验：同一从站内地址不能重复（地址断档已支持，会自动拆成多段轮询）
     QString errorMsg;
     if (!m_channelModel->validateAddressContinuity(&errorMsg)) {
         ui->OperationWidget->setStatusText(errorMsg);
@@ -562,19 +604,27 @@ void MainWidget::onStartCollectRequested()
     const quint16 quantity = ui->modbusSetWidget->currentQuantity();
     const int intervalMs = ui->modbusSetWidget->currentIntervalMs();
 
+    // 按通道配置生成多从站 / 多段轮询任务；无通道时回退到设置卡片的单段配置
+    QVector<PollTask> tasks = m_channelModel->buildPollTasks(funcCode);
+    if (tasks.isEmpty()) {
+        PollTask manualTask;
+        manualTask.slaveId = slaveId;
+        manualTask.functionCode = funcCode;
+        manualTask.startAddress = startAddr;
+        manualTask.quantity = quantity;
+        tasks.append(manualTask);
+    }
+
     // 新一轮采集：统计清零
     ui->collectionStatisticsWidget->resetStatistics();
 
-    // 串口卡片的超时/重试随本次启动下发，后者排队执行在 startPolling 之前
+    // 串口卡片的超时/重试随本次启动下发，后者排队执行在 startPollingTasks 之前
     QMetaObject::invokeMethod(m_worker, "applyCommunicationOptions", Qt::QueuedConnection,
                               Q_ARG(int, ui->comSetWidget->currentResponseTimeoutMs()),
                               Q_ARG(int, ui->comSetWidget->currentRetryCount()));
 
-    QMetaObject::invokeMethod(m_worker, "startPolling", Qt::QueuedConnection,
-                              Q_ARG(quint8, slaveId),
-                              Q_ARG(ModbusFunctionCode, funcCode),
-                              Q_ARG(quint16, startAddr),
-                              Q_ARG(quint16, quantity),
+    QMetaObject::invokeMethod(m_worker, "startPollingTasks", Qt::QueuedConnection,
+                              Q_ARG(QVector<PollTask>, tasks),
                               Q_ARG(int, intervalMs));
 }
 
@@ -741,7 +791,8 @@ void MainWidget::onWorkerPollFailed(ModbusError error, const QString &message)
     ui->OperationWidget->setStatusText(message);
 }
 
-void MainWidget::onWorkerDataUpdated(quint16 startAddress, const QVector<quint16> &values, qint64 rttMs)
+void MainWidget::onWorkerDataUpdated(quint8 slaveId, quint16 startAddress,
+                                     const QVector<quint16> &values, qint64 rttMs)
 {
     // 采集统计：本轮成功，累计请求数与 RTT
     ui->collectionStatisticsWidget->onRoundSuccess(rttMs);
@@ -749,8 +800,8 @@ void MainWidget::onWorkerDataUpdated(quint16 startAddress, const QVector<quint16
     // 实时数据表：同一轮请求共用一个往返耗时，逐行刷新 RTT 列
     ui->realDataWidget->setRoundTripTime(static_cast<int>(rttMs));
 
-    // 一轮采集完成 → 批量更新 ChannelModel 里的通道原始值
-    m_channelModel->updateRawValues(startAddress, values);
+    // 一轮采集完成 → 按从站 + 地址批量更新 ChannelModel 里的通道原始值
+    m_channelModel->updateRawValues(slaveId, startAddress, values);
 
     // 阈值判定：连续越限达到去抖次数才记录报警，恢复后记录解除
     evaluateAlarmThresholds();
@@ -763,6 +814,9 @@ void MainWidget::onWorkerDataUpdated(quint16 startAddress, const QVector<quint16
     const int endAddress = static_cast<int>(startAddress) + static_cast<int>(values.size());
     for (int index = 0; index < m_channelModel->channelCount(); ++index) {
         const ChannelItem &item = m_channelModel->channelAt(index);
+        if (item.slaveId != slaveId) {
+            continue;
+        }
         if (item.registerAddress < startAddress || item.registerAddress >= endAddress) {
             continue;
         }
@@ -794,6 +848,174 @@ void MainWidget::onChannelManagerTriggered()
     dialog.exec();
 }
 
+void MainWidget::onWriteRegisterTriggered()
+{
+    if (!m_portOpen) {
+        ui->OperationWidget->setStatusText(LANGUAGE("LG_write_notConnected"));
+        return;
+    }
+
+    WriteRegisterDialog dialog(m_channelModel, this);
+    connect(&dialog, &WriteRegisterDialog::writeRegistersRequested,
+            this, &MainWidget::onWriteRegistersRequested);
+    connect(&dialog, &WriteRegisterDialog::writeSingleCoilRequested,
+            this, &MainWidget::onWriteSingleCoilRequested);
+    connect(&dialog, &WriteRegisterDialog::writeCoilsRequested,
+            this, &MainWidget::onWriteCoilsRequested);
+    dialog.exec();
+}
+
+void MainWidget::onWriteRegistersRequested(quint8 slaveId, quint16 address,
+                                           const QVector<quint16> &values)
+{
+    if (values.size() == 1) {
+        QMetaObject::invokeMethod(m_worker, "writeSingleRegister", Qt::QueuedConnection,
+                                  Q_ARG(quint8, slaveId), Q_ARG(quint16, address),
+                                  Q_ARG(quint16, values.first()));
+        return;
+    }
+    QMetaObject::invokeMethod(m_worker, "writeMultipleRegisters", Qt::QueuedConnection,
+                              Q_ARG(quint8, slaveId), Q_ARG(quint16, address),
+                              Q_ARG(QVector<quint16>, values));
+}
+
+void MainWidget::onWriteSingleCoilRequested(quint8 slaveId, quint16 address, bool on)
+{
+    QMetaObject::invokeMethod(m_worker, "writeSingleCoil", Qt::QueuedConnection,
+                              Q_ARG(quint8, slaveId), Q_ARG(quint16, address),
+                              Q_ARG(bool, on));
+}
+
+void MainWidget::onWriteCoilsRequested(quint8 slaveId, quint16 address,
+                                       const QVector<bool> &values)
+{
+    QMetaObject::invokeMethod(m_worker, "writeMultipleCoils", Qt::QueuedConnection,
+                              Q_ARG(quint8, slaveId), Q_ARG(quint16, address),
+                              Q_ARG(QVector<bool>, values));
+}
+
+void MainWidget::onWorkerWriteSucceeded(quint8 functionCode, quint16 startAddress,
+                                        quint16 quantity)
+{
+    const QString functionText =
+        QString::number(functionCode, 16).toUpper().rightJustified(2, QLatin1Char('0'));
+    ui->OperationWidget->setStatusText(LANGUAGE("LG_write_successFmt")
+                                           .arg(functionText)
+                                           .arg(startAddress)
+                                           .arg(quantity));
+}
+
+void MainWidget::onWorkerWriteFailed(ModbusError error, const QString &message)
+{
+    Q_UNUSED(error)
+    // 写失败按故障记录，并在状态栏提示
+    ui->alarmAndfaultWidget->addAlarm(AlarmLevel::Fault,
+                                      LANGUAGE("LG_write_failedFmt").arg(message));
+    ui->OperationWidget->setStatusText(message);
+}
+
+void MainWidget::onAlarmRecordAdded(int level, const QString &message)
+{
+    Q_UNUSED(level)
+
+    // 声音提醒（系统提示音）+ 托盘气泡；窗口最小化时也能感知
+    QApplication::beep();
+    if (systemTray != nullptr) {
+        systemTray->showMessage(LANGUAGE("LG_card_alarmFault"), message, 5000);
+    }
+}
+
+void MainWidget::onAlarmHistoryTriggered()
+{
+    AlarmHistoryDialog dialog(m_saveData, this);
+    dialog.exec();
+}
+
+void MainWidget::onDatabaseBackupTriggered()
+{
+    const QString defaultName = QStringLiteral("hmi_backup_%1.db")
+                                    .arg(QDateTime::currentDateTime()
+                                             .toString(QStringLiteral("yyyyMMdd_HHmmss")));
+    const QString path = QFileDialog::getSaveFileName(
+        this, LANGUAGE("LG_db_backup_title"), defaultName,
+        LANGUAGE("LG_db_backup_filter"));
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_saveData, "backupDatabase", Qt::QueuedConnection,
+                              Q_ARG(QString, path));
+}
+
+void MainWidget::onDatabaseVacuumTriggered()
+{
+    QMetaObject::invokeMethod(m_saveData, "vacuumDatabase", Qt::QueuedConnection);
+}
+
+void MainWidget::onCurveScreenshotTriggered()
+{
+    const QString defaultName = QStringLiteral("curve_%1.png")
+                                    .arg(QDateTime::currentDateTime()
+                                             .toString(QStringLiteral("yyyyMMdd_HHmmss")));
+    const QString path = QFileDialog::getSaveFileName(
+        this, LANGUAGE("LG_curve_screenshotTitle"), defaultName,
+        LANGUAGE("LG_curve_screenshotFilter"));
+    if (path.isEmpty()) {
+        return;
+    }
+
+    if (ui->realCurveWidget->exportScreenshot(path)) {
+        ui->OperationWidget->setStatusText(LANGUAGE("LG_curve_screenshotDone"));
+    } else {
+        QMessageBox::warning(this, LANGUAGE("LG_curve_screenshotTitle"),
+                             LANGUAGE("LG_curve_exportFail"));
+    }
+}
+
+void MainWidget::onCurveExportTriggered()
+{
+    const QString defaultName = QStringLiteral("curve_%1.csv")
+                                    .arg(QDateTime::currentDateTime()
+                                             .toString(QStringLiteral("yyyyMMdd_HHmmss")));
+    const QString path = QFileDialog::getSaveFileName(
+        this, LANGUAGE("LG_curve_exportTitle"), defaultName,
+        LANGUAGE("LG_store_exportFilter"));
+    if (path.isEmpty()) {
+        return;
+    }
+
+    if (ui->realCurveWidget->exportCurveCsv(path)) {
+        ui->OperationWidget->setStatusText(LANGUAGE("LG_curve_exportDone"));
+    } else {
+        QMessageBox::warning(this, LANGUAGE("LG_curve_exportTitle"),
+                             LANGUAGE("LG_curve_exportFail"));
+    }
+}
+
+void MainWidget::onDatabaseMaintenanceFinished(bool ok, const QString &action,
+                                               const QString &errorString)
+{
+    if (action == QStringLiteral("backup")) {
+        if (ok) {
+            ui->OperationWidget->setStatusText(LANGUAGE("LG_db_backup_done"));
+        } else {
+            QMessageBox::warning(this, LANGUAGE("LG_db_backup_title"),
+                                 LANGUAGE("LG_db_backup_failFmt")
+                                     .arg(errorString.isEmpty()
+                                              ? LANGUAGE("LG_store_err_dbNotReady")
+                                              : errorString));
+        }
+        return;
+    }
+
+    if (!ok && !errorString.isEmpty()) {
+        QMessageBox::warning(this, LANGUAGE("LG_card_dataStore"),
+                             LANGUAGE("LG_db_vacuum_failFmt").arg(errorString));
+    } else {
+        ui->OperationWidget->setStatusText(LANGUAGE("LG_db_vacuum_done"));
+    }
+}
+
 void MainWidget::onAlarmRuleTriggered()
 {
     AlarmRuleDialog dialog(m_channelModel, m_alarmDebounceCount, this);
@@ -811,6 +1033,7 @@ void MainWidget::onAlarmDebounceChanged(int count)
     // 规则变化后清空累计状态，避免沿用旧阈值下的连续次数
     m_alarmStates.clear();
     updateAlarmParamTip();
+    markProjectDirty();
 }
 
 void MainWidget::onChannelListChanged()
@@ -963,7 +1186,7 @@ bool MainWidget::saveProjectToFile(const QString &path)
         m_projectConfig->addRecentProject(path);
     }
     refreshRecentProjects();
-    updateWindowTitle();
+    clearProjectDirty();
     return true;
 }
 
@@ -987,8 +1210,13 @@ bool MainWidget::loadProjectFromFile(const QString &path)
         return false;
     }
 
+    // 应用工程会批量修改通道与参数，期间不标记「未保存」
+    m_suppressProjectDirty = true;
     QString errorMessage;
-    if (!applyProjectJson(doc.object(), &errorMessage)) {
+    const bool applied = applyProjectJson(doc.object(), &errorMessage);
+    m_suppressProjectDirty = false;
+
+    if (!applied) {
         QMessageBox::warning(this, LANGUAGE("LG_project_title"), errorMessage);
         return false;
     }
@@ -1000,7 +1228,7 @@ bool MainWidget::loadProjectFromFile(const QString &path)
 
     persistProjectConfig();
     refreshRecentProjects();
-    updateWindowTitle();
+    clearProjectDirty();
     return true;
 }
 
@@ -1012,23 +1240,31 @@ void MainWidget::onNewProjectTriggered()
         return;
     }
 
+    // 新建会丢弃当前工程内容，先处理未保存修改
+    if (!maybeSaveProject()) {
+        return;
+    }
+
     const auto answer = QMessageBox::question(
         this, LANGUAGE("LG_project_title"), LANGUAGE("LG_project_newConfirm"));
     if (answer != QMessageBox::Yes) {
         return;
     }
 
+    // 重置通道与报警规则属于工程初始化，不标记「未保存」
+    m_suppressProjectDirty = true;
     m_channelModel->clear();
     seedDemoChannels();
     m_alarmDebounceCount = 3;
     m_alarmStates.clear();
     updateAlarmParamTip();
+    m_suppressProjectDirty = false;
 
     if (m_projectConfig != nullptr) {
         m_projectConfig->setCurrentProjectPath(QString());
     }
     persistProjectConfig();
-    updateWindowTitle();
+    clearProjectDirty();
 }
 
 void MainWidget::onOpenProjectTriggered()
@@ -1045,37 +1281,25 @@ void MainWidget::onOpenProjectTriggered()
         return;
     }
 
+    // 选定文件后再询问是否保存当前工程，避免打断文件选择流程
+    if (!maybeSaveProject()) {
+        return;
+    }
+
     loadProjectFromFile(path);
 }
 
 void MainWidget::onSaveProjectTriggered()
 {
-    QString path;
-    if (m_projectConfig != nullptr) {
-        path = m_projectConfig->currentProjectPath();
-    }
-
-    // 尚未关联工程文件时先选择保存位置
-    if (path.isEmpty()) {
-        const QString defaultName = QDir(QCoreApplication::applicationDirPath())
-                                        .filePath(QStringLiteral("hmi_project.mhproj"));
-        path = QFileDialog::getSaveFileName(
-            this, LANGUAGE("LG_project_saveTitle"), defaultName,
-            LANGUAGE("LG_project_filter"));
-        if (path.isEmpty()) {
-            return;
-        }
-    }
-
-    if (saveProjectToFile(path)) {
-        persistProjectConfig();
-        ui->OperationWidget->setStatusText(LANGUAGE("LG_project_savedFmt").arg(path));
-    }
+    saveProjectInteractive();
 }
 
 void MainWidget::onRecentProjectTriggered(const QString &path)
 {
     if (path.isEmpty() || m_polling) {
+        return;
+    }
+    if (!maybeSaveProject()) {
         return;
     }
     loadProjectFromFile(path);
@@ -1098,7 +1322,132 @@ void MainWidget::updateWindowTitle()
     if (!path.isEmpty()) {
         title = QStringLiteral("%1 - %2").arg(title, QFileInfo(path).fileName());
     }
+    // 有未保存修改时标题栏追加星号
+    if (m_projectDirty) {
+        title += QStringLiteral(" *");
+    }
     setWindowTitle(title);
+}
+
+// ============== 界面语言 ==============
+
+void MainWidget::applyLanguage(int languageType, bool persist)
+{
+    if (m_projectConfig == nullptr) {
+        return;
+    }
+
+    // -1 跟随系统：按当前系统语言解析成中文/英文
+    int resolved = languageType;
+    if (resolved < 0) {
+        const LanguageType systemType = Language::getInstance()->convertToLanguageType(
+            QLocale::system().language());
+        resolved = (systemType == LanguageType_En) ? 1 : 0;
+    }
+
+    Language::getInstance()->setLanguageType(resolved == 1 ? LanguageType_En
+                                                           : LanguageType_Zh);
+
+    if (persist) {
+        m_projectConfig->setLanguageType(languageType);
+        m_projectConfig->save();
+    }
+
+    ui->MenuWidget->setLanguageType(languageType);
+
+    // 所有界面控件都继承自 BaseWidget，统一触达一次语言刷新
+    const QList<BaseWidget *> widgets = findChildren<BaseWidget *>();
+    for (BaseWidget *widget : widgets) {
+        widget->languageChange();
+    }
+    languageChange();
+}
+
+void MainWidget::onLanguageTriggered(int languageType)
+{
+    applyLanguage(languageType, true);
+}
+
+// ============== 工程脏标记 ==============
+
+void MainWidget::initProjectDirtyTracking()
+{
+    if (m_channelModel != nullptr) {
+        connect(m_channelModel, &ChannelModel::channelsChanged,
+                this, &MainWidget::markProjectDirty);
+        connect(m_channelModel, &ChannelModel::channelEnabledChanged,
+                this, &MainWidget::markProjectDirty);
+        connect(m_channelModel, &ChannelModel::bufferSizeChanged,
+                this, &MainWidget::markProjectDirty);
+    }
+
+    connect(ui->comSetWidget, &ComSetWidget::settingsChanged,
+            this, &MainWidget::markProjectDirty);
+    connect(ui->modbusSetWidget, &ModbusSetWidget::settingsChanged,
+            this, &MainWidget::markProjectDirty);
+}
+
+void MainWidget::markProjectDirty()
+{
+    if (m_suppressProjectDirty || m_projectDirty) {
+        return;
+    }
+    m_projectDirty = true;
+    updateWindowTitle();
+}
+
+void MainWidget::clearProjectDirty()
+{
+    m_projectDirty = false;
+    updateWindowTitle();
+}
+
+bool MainWidget::maybeSaveProject()
+{
+    if (!m_projectDirty) {
+        return true;
+    }
+
+    const QMessageBox::StandardButton answer = QMessageBox::question(
+        this, LANGUAGE("LG_project_title"), LANGUAGE("LG_project_unsavedTip"),
+        QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+        QMessageBox::Save);
+
+    if (answer == QMessageBox::Cancel || answer == QMessageBox::NoButton) {
+        return false;
+    }
+    if (answer == QMessageBox::Discard) {
+        return true;
+    }
+    return saveProjectInteractive();
+}
+
+bool MainWidget::saveProjectInteractive()
+{
+    QString path;
+    if (m_projectConfig != nullptr) {
+        path = m_projectConfig->currentProjectPath();
+    }
+
+    // 尚未关联工程文件时先选择保存位置
+    if (path.isEmpty()) {
+        const QString defaultName = QDir(QCoreApplication::applicationDirPath())
+                                        .filePath(QStringLiteral("hmi_project.mhproj"));
+        path = QFileDialog::getSaveFileName(
+            this, LANGUAGE("LG_project_saveTitle"), defaultName,
+            LANGUAGE("LG_project_filter"));
+        if (path.isEmpty()) {
+            return false;
+        }
+    }
+
+    if (!saveProjectToFile(path)) {
+        return false;
+    }
+
+    persistProjectConfig();
+    ui->OperationWidget->setStatusText(LANGUAGE("LG_project_savedFmt").arg(path));
+    return true;
 }
 
 // ============== 曲线设置 / 数据保留 / 快速上手 ==============
@@ -1234,7 +1583,8 @@ void MainWidget::onHistoryQueryRequested(qint64 fromMs, qint64 toMs, int channel
     // 由数据库线程执行查询，结果通过 samplesQueried 回到对话框
     QMetaObject::invokeMethod(m_saveData, "querySamples", Qt::QueuedConnection,
                               Q_ARG(qint64, fromMs), Q_ARG(qint64, toMs),
-                              Q_ARG(int, channelIndex), Q_ARG(int, 5000));
+                              Q_ARG(int, channelIndex),
+                              Q_ARG(int, HistoryQueryDialog::kQueryLimit));
 }
 
 // ============== 报警阈值判定 ==============
@@ -1336,9 +1686,11 @@ void MainWidget::paintEvent(QPaintEvent *event)
 void MainWidget::changeEvent(QEvent *event)
 {
     if (event->type() == QEvent::LanguageChange) {
-        LanguageType languageType = Language::getInstance()->convertToLanguageType(
-            QLocale::system().language());
-        Language::getInstance()->setLanguageType(languageType);
+        // 仅「跟随系统」时随系统语言切换；用户显式选择后保持其选择
+        if (m_projectConfig != nullptr && m_projectConfig->languageType() < 0) {
+            applyLanguage(-1, false);
+        }
+        BaseWidget::changeEvent(event);
     } else {
         QWidget::changeEvent(event);
     }

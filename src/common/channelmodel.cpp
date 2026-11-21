@@ -5,6 +5,8 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMap>
+#include <QSet>
 
 #include <algorithm>
 
@@ -13,6 +15,7 @@ const QString kKeyBufferSize = QStringLiteral("bufferSize");
 const QString kKeyChannels = QStringLiteral("channels");
 const QString kKeyName = QStringLiteral("name");
 const QString kKeyUnit = QStringLiteral("unit");
+const QString kKeySlave = QStringLiteral("slave");
 const QString kKeyRegister = QStringLiteral("register");
 const QString kKeyScale = QStringLiteral("scale");
 const QString kKeyRangeMin = QStringLiteral("rangeMin");
@@ -195,25 +198,62 @@ bool ChannelModel::enabledAddressRange(quint16 &startAddress, quint16 &quantity)
 
 bool ChannelModel::checkContinuity(const QVector<ChannelItem> &channels, QString *errorMessage) const
 {
-    QVector<quint16> addresses;
+    // 多段轮询后不再要求地址连续，但仍不允许同一从站出现重复寄存器地址
+    QSet<quint32> seenAddresses;
     for (const ChannelItem &item : channels) {
-        if (item.enabled) {
-            addresses.append(item.registerAddress);
+        if (!item.enabled) {
+            continue;
         }
-    }
-    if (addresses.size() < 2) {
-        return true;
-    }
-
-    std::sort(addresses.begin(), addresses.end());
-    for (int index = 1; index < addresses.size(); ++index) {
-        // 重复或跳号都视为不连续
-        if (addresses.at(index) != addresses.at(index - 1) + 1) {
+        const quint32 key = (static_cast<quint32>(item.slaveId) << 16) | item.registerAddress;
+        if (seenAddresses.contains(key)) {
             setError(errorMessage, LANGUAGE("LG_channel_addrNotContiguous"));
             return false;
         }
+        seenAddresses.insert(key);
     }
     return true;
+}
+
+QVector<PollTask> ChannelModel::buildPollTasks(ModbusFunctionCode functionCode) const
+{
+    const bool coilFunction = (functionCode == ModbusFunctionCode::ReadCoils
+                               || functionCode == ModbusFunctionCode::ReadDiscreteInputs);
+    const int maxQuantity = coilFunction ? 2000 : 125;
+
+    // 先按从站归集启用通道地址
+    QMap<quint8, QVector<quint16>> addressMap;
+    for (const ChannelItem &item : m_channels) {
+        if (item.enabled) {
+            addressMap[item.slaveId].append(item.registerAddress);
+        }
+    }
+
+    QVector<PollTask> tasks;
+    for (auto it = addressMap.begin(); it != addressMap.end(); ++it) {
+        QVector<quint16> addresses = it.value();
+        std::sort(addresses.begin(), addresses.end());
+        addresses.erase(std::unique(addresses.begin(), addresses.end()), addresses.end());
+
+        // 同一从站内按地址连续性 + 单次读取上限切段
+        int begin = 0;
+        while (begin < addresses.size()) {
+            int end = begin;
+            while (end + 1 < addresses.size()
+                   && addresses.at(end + 1) == addresses.at(end) + 1
+                   && (addresses.at(end + 1) - addresses.at(begin) + 1) <= maxQuantity) {
+                ++end;
+            }
+
+            PollTask task;
+            task.slaveId = it.key();
+            task.functionCode = functionCode;
+            task.startAddress = addresses.at(begin);
+            task.quantity = static_cast<quint16>(addresses.at(end) - addresses.at(begin) + 1);
+            tasks.append(task);
+            begin = end + 1;
+        }
+    }
+    return tasks;
 }
 
 int ChannelModel::bufferSize() const
@@ -239,6 +279,22 @@ void ChannelModel::updateRawValues(quint16 startAddress, const QVector<quint16> 
             continue;
         }
         setChannelRawValue(index, values.at(offset));
+    }
+}
+
+void ChannelModel::updateRawValues(quint8 slaveId, quint16 startAddress,
+                                   const QVector<quint16> &values)
+{
+    for (int offset = 0; offset < values.size(); ++offset) {
+        const quint16 address = static_cast<quint16>(startAddress + offset);
+        for (int index = 0; index < m_channels.size(); ++index) {
+            const ChannelItem &item = m_channels.at(index);
+            if (!item.enabled || item.slaveId != slaveId || item.registerAddress != address) {
+                continue;
+            }
+            setChannelRawValue(index, values.at(offset));
+            break;
+        }
     }
 }
 
@@ -344,6 +400,7 @@ ChannelItem ChannelModel::channelFromObject(const QJsonObject &obj, bool *ok) co
 
     item.name = obj.value(kKeyName).toString();
     item.unit = obj.value(kKeyUnit).toString();
+    item.slaveId = static_cast<quint8>(obj.value(kKeySlave).toInt(1));
     item.registerAddress = static_cast<quint16>(obj.value(kKeyRegister).toInt());
     item.dataType = static_cast<ChannelDataType>(obj.value(kKeyDataType).toInt(0));
     item.scale = obj.value(kKeyScale).toDouble(1.0);
@@ -368,6 +425,7 @@ QJsonObject ChannelModel::channelToObject(const ChannelItem &item) const
     QJsonObject obj;
     obj.insert(kKeyName, item.name);
     obj.insert(kKeyUnit, item.unit);
+    obj.insert(kKeySlave, item.slaveId);
     obj.insert(kKeyRegister, item.registerAddress);
     obj.insert(kKeyDataType, static_cast<int>(item.dataType));
     obj.insert(kKeyScale, item.scale);

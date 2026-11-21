@@ -101,6 +101,11 @@ public:
     bool curveUpperLimitVisible() const;
     void setCurveUpperLimitVisible(bool visible);
 
+    // ---- 界面语言 ----
+    // -1 = 跟随系统，0 = 中文，1 = 英文
+    int languageType() const;
+    void setLanguageType(int type);
+
 private:
     // ini 文件完整路径（含目录创建，目录不可写时退化到系统配置目录）
     QString settingsFilePath() const;
@@ -124,6 +129,8 @@ private:
     int m_curveLineWidth = 2;        // 曲线线宽（像素）
     double m_curveUpperLimit = 80.0; // 上限参考线坐标
     bool m_curveUpperLimitVisible = true;
+
+    int m_languageType = -1;         // 界面语言：-1 跟随系统，0 中文，1 英文
 };
 
 #endif // PROJECTCONFIG_H

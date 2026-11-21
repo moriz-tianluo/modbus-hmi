@@ -59,6 +59,7 @@ private:
 
     QTableWidget *m_table = nullptr;
     QLineEdit *m_nameEdit = nullptr;
+    QSpinBox *m_slaveSpin = nullptr;
     QSpinBox *m_addressSpin = nullptr;
     QComboBox *m_typeCombo = nullptr;
     QLineEdit *m_unitEdit = nullptr;

@@ -10,6 +10,9 @@ ModbusPoller::ModbusPoller(ModbusRtu *rtu, QObject *parent)
     m_pollTimer->setSingleShot(true);
     connect(m_pollTimer, &QTimer::timeout, this, &ModbusPoller::onPollTimeout);
 
+    qRegisterMetaType<PollTask>("PollTask");
+    qRegisterMetaType<QVector<PollTask>>("QVector<PollTask>");
+
     if (m_rtu) {
         connect(m_rtu, &ModbusRtu::registersRead, this, &ModbusPoller::onRegistersRead);
         connect(m_rtu, &ModbusRtu::requestFailed, this, &ModbusPoller::onRequestFailed);
@@ -20,6 +23,24 @@ ModbusPoller::ModbusPoller(ModbusRtu *rtu, QObject *parent)
 ModbusPoller::~ModbusPoller()
 {
     stop();
+}
+
+void ModbusPoller::setTasks(const QVector<PollTask> &tasks)
+{
+    m_tasks = tasks;
+    if (m_taskIndex >= m_tasks.size()) {
+        m_taskIndex = 0;
+    }
+}
+
+QVector<PollTask> ModbusPoller::tasks() const
+{
+    return m_tasks;
+}
+
+int ModbusPoller::taskCount() const
+{
+    return m_tasks.size();
 }
 
 void ModbusPoller::setSlaveId(quint8 slaveId)
@@ -106,6 +127,7 @@ void ModbusPoller::start()
 
     m_running = true;
     m_retryCount = 0;
+    m_taskIndex = 0;
 
     if (m_rtu) {
         m_rtu->setSlaveId(m_slaveId);
@@ -166,7 +188,8 @@ void ModbusPoller::onRegistersRead(quint16 startAddress, const QVector<quint16> 
     m_retryCount = 0;
     m_state = PollerState::Idle;
 
-    emit roundCompleted(values, rttMs);
+    emit roundCompleted(m_activeTask.slaveId, m_activeTask.startAddress, values, rttMs);
+    advanceTask();
     scheduleNext(m_intervalMs);
 }
 
@@ -188,6 +211,7 @@ void ModbusPoller::onRequestFailed(ModbusError error, const QString &message)
     m_state = PollerState::Idle;
 
     emit roundFailed(error, message);
+    advanceTask();
     scheduleNext(m_intervalMs);
 }
 
@@ -206,6 +230,7 @@ void ModbusPoller::onExceptionReceived(quint8 exceptionCode, const QString &mess
     m_state = PollerState::Idle;
 
     emit roundFailed(ModbusError::ExceptionCode, message);
+    advanceTask();
     scheduleNext(m_intervalMs);
 }
 
@@ -220,13 +245,46 @@ void ModbusPoller::requestOnce()
         return;
     }
 
+    const PollTask task = currentTask();
+    if (task.quantity == 0) {
+        scheduleNext(m_intervalMs);
+        return;
+    }
+
+    // 多从站：每个任务切换前先更新协议层从站地址
+    m_rtu->setSlaveId(task.slaveId);
+    m_activeTask = task;
+
     m_state = PollerState::Waiting;
-    const bool accepted = m_rtu->readRegisters(m_functionCode, m_startAddress, m_quantity);
+    const bool accepted = m_rtu->readRegisters(task.functionCode, task.startAddress,
+                                               task.quantity);
     if (!accepted && m_state == PollerState::Waiting) {
         // 同步失败已由 onRequestFailed 处理，这里只兜底恢复状态
         m_state = PollerState::Idle;
         scheduleNext(m_intervalMs);
     }
+}
+
+PollTask ModbusPoller::currentTask() const
+{
+    if (!m_tasks.isEmpty()) {
+        return m_tasks.at(m_taskIndex % m_tasks.size());
+    }
+
+    PollTask task;
+    task.slaveId = m_slaveId;
+    task.functionCode = m_functionCode;
+    task.startAddress = m_startAddress;
+    task.quantity = m_quantity;
+    return task;
+}
+
+void ModbusPoller::advanceTask()
+{
+    if (m_tasks.isEmpty()) {
+        return;
+    }
+    m_taskIndex = (m_taskIndex + 1) % m_tasks.size();
 }
 
 void ModbusPoller::scheduleNext(int milliseconds)

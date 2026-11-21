@@ -2,6 +2,7 @@
 #include "ui_comsetwidget.h"
 #include "Language.h"
 
+#include <QComboBox>
 #include <QSerialPort>
 
 ComSetWidget::ComSetWidget(QWidget *parent)
@@ -11,6 +12,7 @@ ComSetWidget::ComSetWidget(QWidget *parent)
     ui->setupUi(this);
     setAttribute(Qt::WA_StyledBackground, true);
     refreshPorts();
+    initConnections();
     languageChange();
 }
 
@@ -35,6 +37,20 @@ void ComSetWidget::refreshPorts()
     const QStringList ports = SerialPortHelper::availablePorts();
     ui->comboBoxPort->clear();
     ui->comboBoxPort->addItems(ports);
+}
+
+void ComSetWidget::initConnections()
+{
+    connect(ui->comboBoxPort, &QComboBox::currentIndexChanged,
+            this, &ComSetWidget::settingsChanged);
+    connect(ui->comboBoxBit, &QComboBox::currentIndexChanged,
+            this, &ComSetWidget::settingsChanged);
+    connect(ui->comboBoxFrame, &QComboBox::currentIndexChanged,
+            this, &ComSetWidget::settingsChanged);
+    connect(ui->comboBoxTimeout, &QComboBox::currentIndexChanged,
+            this, &ComSetWidget::settingsChanged);
+    connect(ui->comboBoxRe, &QComboBox::currentIndexChanged,
+            this, &ComSetWidget::settingsChanged);
 }
 
 // 把 UI 下拉框字符串解析为 QSerialPort 的枚举值

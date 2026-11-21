@@ -82,6 +82,14 @@ void BaseSystemTray::hideTrayIcon()
     trayIcon->hide();
 }
 
+void BaseSystemTray::showMessage(const QString &title, const QString &text, int timeoutMs)
+{
+    if (trayIcon == nullptr || !trayIcon->isVisible()) {
+        return;
+    }
+    trayIcon->showMessage(title, text, QSystemTrayIcon::Warning, timeoutMs);
+}
+
 void BaseSystemTray::exitApplication()
 {
     emit trayIconClicked(ExitApplication);

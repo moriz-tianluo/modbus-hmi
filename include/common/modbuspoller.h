@@ -2,6 +2,7 @@
 #define MODBUSPOLLER_H
 
 #include "modbusrtu.h"
+#include "polltask.h"
 
 #include <QObject>
 #include <QVector>
@@ -27,6 +28,12 @@ public:
     ~ModbusPoller() override;
 
     // ---- 采集配置 ----
+    // 任务列表：每轮按顺序读取一个任务，覆盖多从站 / 多段地址。
+    // 任务列表为空时退回单任务模式（slaveId + functionCode + startAddress + quantity）
+    void setTasks(const QVector<PollTask> &tasks);
+    QVector<PollTask> tasks() const;
+    int taskCount() const;
+
     // 启动时会同步下发到 ModbusRtu；运行中修改会在下一轮生效
     void setSlaveId(quint8 slaveId);
     quint8 slaveId() const;
@@ -66,8 +73,9 @@ public:
     quint64 failureCount() const;
 
 signals:
-    // 一轮采集完成，返回寄存器值；startAddress 可由外层查询 Poller::startAddress()
-    void roundCompleted(const QVector<quint16> &values, qint64 rttMs);
+    // 一轮采集完成，返回寄存器值；slaveId / startAddress 对应本次任务
+    void roundCompleted(quint8 slaveId, quint16 startAddress,
+                        const QVector<quint16> &values, qint64 rttMs);
     // 一轮采集最终失败（Poller 层与 ModbusRtu 层重试均已用尽）
     void roundFailed(ModbusError error, const QString &message);
 
@@ -84,6 +92,10 @@ private:
     // 按毫秒数安排下一次定时器触发（使用单次 QTimer::singleShot）
     void scheduleNext(int milliseconds);
     bool isRegisterFunctionCode(ModbusFunctionCode code) const;
+    // 取当前待执行任务：任务列表为空时用单任务配置合成
+    PollTask currentTask() const;
+    // 一轮结束后切到下一个任务
+    void advanceTask();
 
     ModbusRtu *m_rtu = nullptr;
     QTimer *m_pollTimer = nullptr;
@@ -101,6 +113,10 @@ private:
     PollerState m_state = PollerState::Idle;
     quint64 m_successCount = 0;
     quint64 m_failureCount = 0;
+
+    QVector<PollTask> m_tasks;   // 多从站 / 多段任务列表，为空时走单任务模式
+    int m_taskIndex = 0;         // 当前任务下标
+    PollTask m_activeTask;       // 已发出请求对应的任务（应答回来时用于回传地址）
 };
 
 #endif // MODBUSPOLLER_H

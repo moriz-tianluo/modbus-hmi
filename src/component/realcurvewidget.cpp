@@ -5,14 +5,18 @@
 
 #include <QDateTime>
 #include <QEvent>
+#include <QBoxLayout>
+#include <QFile>
 #include <QLabel>
+#include <QLayout>
 #include <QMouseEvent>
 #include <QPen>
 #include <QSignalBlocker>
+#include <QTextStream>
 
 namespace {
-// 曲线数量（最多 4 条，对应 ChannelModel 前 4 个通道）
-constexpr int kGraphCount = 4;
+// 曲线数量上限（前 4 条沿用 .ui 图例，后 4 条动态补充）
+constexpr int kMaxGraphs = 8;
 
 // 曲线颜色，与 color.ini 中的 $warningRed / $primaryBlue / $btnGreenBg / $purpleColor 保持一致
 const QColor kColorTemp(QStringLiteral("#E0483F"));
@@ -23,12 +27,16 @@ const QColor kColorGrid(QStringLiteral("#E9EDF5"));
 const QColor kColorAxisText(QStringLiteral("#9AA4B4"));
 const QColor kColorBg(QStringLiteral("#FFFFFF"));
 
-// 四条通道的颜色，与图例 Dash 控件对应的颜色一致
-const QColor kGraphColors[kGraphCount] = {
+// 8 条通道的调色板（超过 4 个通道时继续使用）
+const QColor kGraphColors[kMaxGraphs] = {
     kColorTemp,
     kColorPress,
     kColorFlow,
     kColorLevel,
+    QColor(QStringLiteral("#F59E0B")),
+    QColor(QStringLiteral("#06B6D4")),
+    QColor(QStringLiteral("#EC4899")),
+    QColor(QStringLiteral("#84CC16")),
 };
 } // namespace
 
@@ -46,16 +54,6 @@ RealCurveWidget::RealCurveWidget(QWidget *parent)
 
     connect(ui->pushButtonPause, &QPushButton::clicked,
             this, &RealCurveWidget::onPushButtonPauseClicked);
-
-    // 图例可点击：点哪个通道就选中实时数据表对应行
-    QLabel *legendLabels[kGraphCount] = {
-        ui->labelLegendTemp, ui->labelLegendPress,
-        ui->labelLegendFlow, ui->labelLegendLevel
-    };
-    for (QLabel *label : legendLabels) {
-        label->installEventFilter(this);
-        label->setCursor(Qt::PointingHandCursor);
-    }
 
     languageChange();
 
@@ -148,12 +146,13 @@ void RealCurveWidget::initPlot()
     tickerY->setTickCount(5);
     axisY->setTicker(tickerY);
 
-    // ---- 四条通道曲线 ----
-    for (int i = 0; i < kGraphCount; ++i) {
+    // ---- 通道曲线（最多 8 条，超出部分隐藏）----
+    for (int i = 0; i < kMaxGraphs; ++i) {
         QPen pen(kGraphColors[i]);
         pen.setWidthF(1.6);
         m_graphs[i] = addGraph(kGraphColors[i], pen);
     }
+    initLegend();
 
     // ---- 上限参考线（横轴相对时间坐标）+ 右侧文字标签 ----
     m_limitLine = new QCPItemStraightLine(plot);
@@ -170,6 +169,20 @@ void RealCurveWidget::initPlot()
     m_limitLabel->setFont(QFont(QString(), 7));
     m_limitLabel->setText(LANGUAGE("LG_curve_upperLimit").arg(m_upperLimitValue, 0, 'f', 0));
 
+    // ---- 右侧工程量副轴：坐标位置与主纵轴一致（0~100），刻度文字换成工程值 ----
+    m_engineeringAxis = plot->axisRect()->axis(QCPAxis::atRight);
+    m_engineeringAxis->setBasePen(QPen(kColorGrid));
+    m_engineeringAxis->setTickPen(QPen(kColorGrid));
+    m_engineeringAxis->setSubTickPen(QPen(kColorGrid));
+    m_engineeringAxis->setTickLabelColor(kColorAxisText);
+    m_engineeringAxis->setTickLabelFont(QFont(QString(), 8));
+    m_engineeringAxis->setLabelColor(kColorAxisText);
+    m_engineeringAxis->setLabelFont(QFont(QString(), 8));
+    m_engineeringAxis->setVisible(false);
+
+    initCrosshair();
+    ui->chartView->installEventFilter(this);
+
     plot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
     // 量程已归一化到 0~100，纵轴固定不参与拖动/缩放；横轴仍支持缩放与拖动
     plot->axisRect()->setRangeDrag(Qt::Horizontal);
@@ -180,9 +193,200 @@ void RealCurveWidget::initPlot()
             this, &RealCurveWidget::onAxisXRangeChanged);
     connect(plot, &QCustomPlot::mouseDoubleClick,
             this, &RealCurveWidget::onPlotDoubleClicked);
+    connect(plot, &QCustomPlot::mouseMove,
+            this, &RealCurveWidget::onPlotMouseMove);
 
     plot->setNoAntialiasingOnDrag(false);
     plot->replot();
+}
+
+void RealCurveWidget::initLegend()
+{
+    QLabel *staticLabels[4] = {
+        ui->labelLegendTemp, ui->labelLegendPress,
+        ui->labelLegendFlow, ui->labelLegendLevel
+    };
+    QLabel *staticDashes[4] = {
+        ui->labelLegendDashTemp, ui->labelLegendDashPress,
+        ui->labelLegendDashFlow, ui->labelLegendDashLevel
+    };
+
+    for (int index = 0; index < 4; ++index) {
+        m_legendLabels[index] = staticLabels[index];
+        m_legendDashes[index] = staticDashes[index];
+        m_legendLabels[index]->installEventFilter(this);
+        m_legendLabels[index]->setCursor(Qt::PointingHandCursor);
+    }
+
+    // 第 5~8 通道：动态补充图例，插入到弹性占位符之前（即全部图例之后）
+    auto *layout = qobject_cast<QBoxLayout *>(ui->horizontalLayoutTitle);
+    if (layout == nullptr) {
+        return;
+    }
+    int insertIndex = layout->count();
+    for (int itemIndex = 0; itemIndex < layout->count(); ++itemIndex) {
+        QLayoutItem *item = layout->itemAt(itemIndex);
+        if (item != nullptr && item->spacerItem() != nullptr
+            && item->spacerItem()->expandingDirections() != Qt::Orientations()) {
+            insertIndex = itemIndex;
+            break;
+        }
+    }
+
+    for (int index = 4; index < kMaxGraphs; ++index) {
+        auto *dash = new QLabel(this);
+        dash->setFixedSize(12, 2);
+        auto *label = new QLabel(this);
+        label->setProperty("role", QStringLiteral("legend"));
+        label->installEventFilter(this);
+        label->setCursor(Qt::PointingHandCursor);
+
+        layout->insertWidget(insertIndex, dash);
+        layout->insertWidget(insertIndex + 1, label);
+        insertIndex += 2;
+
+        dash->setVisible(false);
+        label->setVisible(false);
+        m_legendDashes[index] = dash;
+        m_legendLabels[index] = label;
+    }
+}
+
+void RealCurveWidget::initCrosshair()
+{
+    QCustomPlot *plot = ui->chartView;
+
+    m_crosshairLine = new QCPItemStraightLine(plot);
+    m_crosshairLine->setPen(QPen(kColorAxisText, 1.0, Qt::DashLine));
+    m_crosshairLine->point1->setCoords(0, 0);
+    m_crosshairLine->point2->setCoords(0, 100);
+    m_crosshairLine->setVisible(false);
+
+    m_crosshairText = new QCPItemText(plot);
+    m_crosshairText->setClipToAxisRect(true);
+    m_crosshairText->position->setType(QCPItemPosition::ptAxisRectRatio);
+    m_crosshairText->setPositionAlignment(Qt::AlignLeft | Qt::AlignTop);
+    m_crosshairText->position->setCoords(0.012, 0.03);
+    m_crosshairText->setFont(QFont(QString(), 7));
+    m_crosshairText->setPadding(QMargins(4, 3, 4, 3));
+    m_crosshairText->setBrush(QBrush(QColor(255, 255, 255, 225)));
+    m_crosshairText->setPen(QPen(kColorGrid));
+    m_crosshairText->setColor(QColor(QStringLiteral("#334155")));
+    m_crosshairText->setVisible(false);
+}
+
+void RealCurveWidget::refreshEngineeringAxis()
+{
+    if (m_engineeringAxis == nullptr) {
+        return;
+    }
+
+    if (m_channelModel == nullptr || m_channelModel->channelCount() == 0) {
+        m_engineeringAxis->setVisible(false);
+        return;
+    }
+
+    // 优先用高亮通道的量程，否则取第一个启用通道
+    int index = m_highlightedIndex;
+    if (index < 0 || index >= m_channelModel->channelCount()) {
+        index = -1;
+        for (int channel = 0; channel < m_channelModel->channelCount(); ++channel) {
+            if (m_channelModel->channelAt(channel).enabled) {
+                index = channel;
+                break;
+            }
+        }
+    }
+    if (index < 0) {
+        m_engineeringAxis->setVisible(false);
+        return;
+    }
+
+    const ChannelItem &item = m_channelModel->channelAt(index);
+    QSharedPointer<QCPAxisTickerText> ticker(new QCPAxisTickerText);
+    for (int percent = 0; percent <= 100; percent += 25) {
+        ticker->addTick(percent, QString::number(percentToEngineering(index, percent),
+                                                 'f', item.decimals));
+    }
+
+    m_engineeringAxis->setRange(0, 100);
+    m_engineeringAxis->setTicker(ticker);
+    m_engineeringAxis->setVisible(true);
+    m_engineeringAxis->setLabel(item.unit.isEmpty()
+                                   ? item.name
+                                   : QStringLiteral("%1 (%2)").arg(item.name, item.unit));
+}
+
+double RealCurveWidget::percentToEngineering(int channelIndex, double percent) const
+{
+    if (m_channelModel == nullptr || channelIndex < 0
+        || channelIndex >= m_channelModel->channelCount()) {
+        return percent;
+    }
+    const ChannelItem &item = m_channelModel->channelAt(channelIndex);
+    return item.rangeMin + (item.rangeMax - item.rangeMin) * percent / 100.0;
+}
+
+void RealCurveWidget::hideCrosshair()
+{
+    if (m_crosshairLine == nullptr || m_crosshairText == nullptr) {
+        return;
+    }
+    if (!m_crosshairLine->visible() && !m_crosshairText->visible()) {
+        return;
+    }
+    m_crosshairLine->setVisible(false);
+    m_crosshairText->setVisible(false);
+    ui->chartView->replot(QCustomPlot::rpQueuedReplot);
+}
+
+void RealCurveWidget::onPlotMouseMove(QMouseEvent *event)
+{
+    if (m_crosshairLine == nullptr || m_crosshairText == nullptr || m_channelModel == nullptr) {
+        return;
+    }
+
+    QCPAxis *axisX = ui->chartView->axisRect()->axis(QCPAxis::atBottom);
+    const double x = axisX->pixelToCoord(event->pos().x());
+    const QCPRange range = axisX->range();
+    if (x < range.lower || x > range.upper) {
+        hideCrosshair();
+        return;
+    }
+
+    m_crosshairLine->point1->setCoords(x, 0);
+    m_crosshairLine->point2->setCoords(x, 100);
+    m_crosshairLine->setVisible(true);
+
+    // 逐通道取光标位置之前最近的数据点，换算成工程值显示
+    QStringList lines;
+    const int count = qMin(m_channelModel->channelCount(), kMaxGraphs);
+    for (int index = 0; index < count; ++index) {
+        QCPGraph *graph = m_graphs[index];
+        if (graph == nullptr || !graph->visible()) {
+            continue;
+        }
+        const QCPGraphDataContainer::const_iterator it = graph->data()->findBegin(x, true);
+        if (it == graph->data()->constEnd()) {
+            continue;
+        }
+
+        const ChannelItem &item = m_channelModel->channelAt(index);
+        const double engineering = percentToEngineering(index, it->value);
+        lines << QStringLiteral("%1  %2 %3")
+                     .arg(item.name)
+                     .arg(engineering, 0, 'f', item.decimals)
+                     .arg(item.unit);
+    }
+
+    if (lines.isEmpty()) {
+        hideCrosshair();
+        return;
+    }
+
+    m_crosshairText->setText(lines.join(QLatin1Char('\n')));
+    m_crosshairText->setVisible(true);
+    ui->chartView->replot(QCustomPlot::rpQueuedReplot);
 }
 
 void RealCurveWidget::setChannelModel(ChannelModel *model)
@@ -543,6 +747,8 @@ void RealCurveWidget::setHighlightedChannel(int index)
 
     m_highlightedIndex = index;
     applyChannelStyles();
+    // 副轴切换为高亮通道的工程量刻度
+    refreshEngineeringAxis();
 
     if (!m_paused) {
         ui->chartView->replot();
@@ -551,25 +757,25 @@ void RealCurveWidget::setHighlightedChannel(int index)
 
 void RealCurveWidget::refreshLegend()
 {
-    QLabel *legendLabels[kGraphCount] = {
-        ui->labelLegendTemp, ui->labelLegendPress,
-        ui->labelLegendFlow, ui->labelLegendLevel
-    };
-    QLabel *legendDashes[kGraphCount] = {
-        ui->labelLegendDashTemp, ui->labelLegendDashPress,
-        ui->labelLegendDashFlow, ui->labelLegendDashLevel
-    };
-
     // 没有模型时保持 .ui 里的静态图例，不做联动
     if (m_channelModel == nullptr) {
         return;
     }
 
     const int count = m_channelModel->channelCount();
-    for (int i = 0; i < kGraphCount; ++i) {
+    for (int i = 0; i < kMaxGraphs; ++i) {
+        QLabel *label = m_legendLabels[i];
+        QLabel *dash = m_legendDashes[i];
         const bool exist = (i < count);
-        legendLabels[i]->setVisible(exist);
-        legendDashes[i]->setVisible(exist);
+
+        if (label != nullptr) {
+            label->setVisible(exist);
+        }
+        if (dash != nullptr) {
+            dash->setVisible(exist);
+            dash->setStyleSheet(QStringLiteral("background-color: %1;")
+                                    .arg(kGraphColors[i].name()));
+        }
 
         if (!exist) {
             if (m_graphs[i] != nullptr) {
@@ -579,14 +785,17 @@ void RealCurveWidget::refreshLegend()
         }
 
         const ChannelItem &item = m_channelModel->channelAt(i);
-        legendLabels[i]->setText(item.name);
-        // 禁用或图例双击隐藏的通道变灰，与曲线可见性保持一致
-        const bool dimmed = !item.enabled || m_graphHidden[i];
-        legendLabels[i]->setStyleSheet(
-            dimmed ? QStringLiteral("color: #B0B8C4;") : QString());
+        if (label != nullptr) {
+            label->setText(item.name);
+            // 禁用或图例双击隐藏的通道变灰，与曲线可见性保持一致
+            const bool dimmed = !item.enabled || m_graphHidden[i];
+            label->setStyleSheet(
+                dimmed ? QStringLiteral("color: #B0B8C4;") : QString());
+        }
     }
 
     applyChannelStyles();
+    refreshEngineeringAxis();
 
     if (!m_paused) {
         ui->chartView->replot();
@@ -595,9 +804,9 @@ void RealCurveWidget::refreshLegend()
 
 void RealCurveWidget::applyChannelStyles()
 {
-    const int count = (m_channelModel != nullptr) ? m_channelModel->channelCount() : kGraphCount;
+    const int count = (m_channelModel != nullptr) ? m_channelModel->channelCount() : kMaxGraphs;
 
-    for (int i = 0; i < kGraphCount; ++i) {
+    for (int i = 0; i < kMaxGraphs; ++i) {
         QCPGraph *graph = m_graphs[i];
         if (graph == nullptr) {
             continue;
@@ -632,23 +841,21 @@ void RealCurveWidget::applyChannelStyles()
 
 int RealCurveWidget::legendIndexOf(const QObject *watched) const
 {
-    if (watched == ui->labelLegendTemp) {
-        return 0;
-    }
-    if (watched == ui->labelLegendPress) {
-        return 1;
-    }
-    if (watched == ui->labelLegendFlow) {
-        return 2;
-    }
-    if (watched == ui->labelLegendLevel) {
-        return 3;
+    for (int index = 0; index < kMaxGraphs; ++index) {
+        if (m_legendLabels[index] == watched) {
+            return index;
+        }
     }
     return -1;
 }
 
 bool RealCurveWidget::eventFilter(QObject *watched, QEvent *event)
 {
+    // 鼠标移出图表：隐藏十字光标
+    if (watched == ui->chartView && event->type() == QEvent::Leave) {
+        hideCrosshair();
+    }
+
     const int index = legendIndexOf(watched);
     if (index >= 0) {
         // 双击图例：隐藏/显示该通道曲线（单击仍为选中联动）
@@ -665,4 +872,57 @@ bool RealCurveWidget::eventFilter(QObject *watched, QEvent *event)
     }
 
     return BaseWidget::eventFilter(watched, event);
+}
+
+bool RealCurveWidget::exportScreenshot(const QString &filePath)
+{
+    if (filePath.isEmpty()) {
+        return false;
+    }
+    return ui->chartView->savePng(filePath, 0, 0, 2.0);
+}
+
+bool RealCurveWidget::exportCurveCsv(const QString &filePath)
+{
+    if (filePath.isEmpty()) {
+        return false;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        return false;
+    }
+
+    QTextStream stream(&file);
+    stream.setEncoding(QStringConverter::Utf8);
+    stream.setGenerateByteOrderMark(true);
+    stream << QStringLiteral("time_s,channel,name,percent,engineering,unit\n");
+
+    const int count = (m_channelModel != nullptr) ? m_channelModel->channelCount() : 0;
+    for (int index = 0; index < qMin(count, kMaxGraphs); ++index) {
+        QCPGraph *graph = m_graphs[index];
+        if (graph == nullptr) {
+            continue;
+        }
+
+        const ChannelItem &item = m_channelModel->channelAt(index);
+        QString name = item.name;
+        if (name.contains(QLatin1Char(',')) || name.contains(QLatin1Char('"'))) {
+            name.replace(QLatin1Char('"'), QStringLiteral("\"\""));
+            name = QLatin1Char('"') + name + QLatin1Char('"');
+        }
+
+        const QCPGraphDataContainer::const_iterator end = graph->data()->constEnd();
+        for (QCPGraphDataContainer::const_iterator it = graph->data()->constBegin();
+             it != end; ++it) {
+            stream << QString::number(it->key, 'f', 3) << QLatin1Char(',')
+                   << index << QLatin1Char(',') << name << QLatin1Char(',')
+                   << QString::number(it->value, 'f', 2) << QLatin1Char(',')
+                   << QString::number(percentToEngineering(index, it->value),
+                                      'f', item.decimals)
+                   << QLatin1Char(',') << item.unit << QLatin1Char('\n');
+        }
+    }
+    file.close();
+    return true;
 }

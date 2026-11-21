@@ -38,9 +38,10 @@ void ChannelEditDialog::buildUi()
 
     // ---- 通道列表 ----
     m_table = new QTableWidget(this);
-    m_table->setColumnCount(5);
+    m_table->setColumnCount(6);
     m_table->setHorizontalHeaderLabels({
         LANGUAGE("LG_table_channel"),
+        LANGUAGE("LG_channel_formSlave"),
         LANGUAGE("LG_channel_formAddr"),
         LANGUAGE("LG_channel_formType"),
         LANGUAGE("LG_channel_formRange"),
@@ -53,10 +54,11 @@ void ChannelEditDialog::buildUi()
     m_table->verticalHeader()->setVisible(false);
     m_table->horizontalHeader()->setStretchLastSection(false);
     m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
-    m_table->setColumnWidth(1, 110);
+    m_table->setColumnWidth(1, 80);
     m_table->setColumnWidth(2, 110);
-    m_table->setColumnWidth(3, 140);
-    m_table->setColumnWidth(4, 80);
+    m_table->setColumnWidth(3, 110);
+    m_table->setColumnWidth(4, 140);
+    m_table->setColumnWidth(5, 80);
     layout->addWidget(m_table, 1);
 
     connect(m_table, &QTableWidget::itemSelectionChanged,
@@ -90,6 +92,8 @@ void ChannelEditDialog::buildForm(QVBoxLayout *layout)
     QFormLayout *form = new QFormLayout(group);
 
     m_nameEdit = new QLineEdit(group);
+    m_slaveSpin = new QSpinBox(group);
+    m_slaveSpin->setRange(1, 247);
     m_addressSpin = new QSpinBox(group);
     m_addressSpin->setRange(0, 65535);
     m_addressSpin->setDisplayIntegerBase(10);
@@ -126,6 +130,7 @@ void ChannelEditDialog::buildForm(QVBoxLayout *layout)
             this, &ChannelEditDialog::onPickColorClicked);
 
     form->addRow(LANGUAGE("LG_channel_formName"), m_nameEdit);
+    form->addRow(LANGUAGE("LG_channel_formSlave"), m_slaveSpin);
     form->addRow(LANGUAGE("LG_channel_formAddr"), m_addressSpin);
     form->addRow(LANGUAGE("LG_channel_formType"), m_typeCombo);
     form->addRow(LANGUAGE("LG_channel_formUnit"), m_unitEdit);
@@ -162,13 +167,14 @@ void ChannelEditDialog::refreshTable()
                                                          : QColor(0xC0, 0xC6, 0xD0)));
         m_table->setItem(row, 0, nameItem);
 
-        m_table->setItem(row, 1, new QTableWidgetItem(
+        m_table->setItem(row, 1, new QTableWidgetItem(QString::number(item.slaveId)));
+        m_table->setItem(row, 2, new QTableWidgetItem(
             QString::number(item.registerAddress)));
-        m_table->setItem(row, 2, new QTableWidgetItem(dataTypeText(item.dataType)));
-        m_table->setItem(row, 3, new QTableWidgetItem(
+        m_table->setItem(row, 3, new QTableWidgetItem(dataTypeText(item.dataType)));
+        m_table->setItem(row, 4, new QTableWidgetItem(
             QStringLiteral("%1 ~ %2").arg(item.rangeMin, 0, 'f', 2)
                                      .arg(item.rangeMax, 0, 'f', 2)));
-        m_table->setItem(row, 4, new QTableWidgetItem(QString::number(item.decimals)));
+        m_table->setItem(row, 5, new QTableWidgetItem(QString::number(item.decimals)));
     }
 
     if (m_currentIndex >= 0 && m_currentIndex < count) {
@@ -186,6 +192,7 @@ void ChannelEditDialog::loadChannelToForm(int index)
     m_currentIndex = index;
 
     m_nameEdit->setText(item.name);
+    m_slaveSpin->setValue(item.slaveId);
     m_addressSpin->setValue(item.registerAddress);
     m_typeCombo->setCurrentIndex(item.dataType == ChannelDataType::Signed16 ? 1 : 0);
     m_unitEdit->setText(item.unit);
@@ -207,6 +214,7 @@ void ChannelEditDialog::clearForm()
     m_currentIndex = -1;
 
     m_nameEdit->clear();
+    m_slaveSpin->setValue(1);
     m_addressSpin->setValue(nextFreeAddress());
     m_typeCombo->setCurrentIndex(0);
     m_unitEdit->clear();
@@ -338,9 +346,12 @@ bool ChannelEditDialog::readForm(ChannelItem *item, int ignoreIndex)
         return false;
     }
 
+    const quint8 slaveId = static_cast<quint8>(m_slaveSpin->value());
     const quint16 address = static_cast<quint16>(m_addressSpin->value());
     for (int index = 0; index < m_model->channelCount(); ++index) {
+        // 只拦同一从站下的重复地址，不同从站可共用地址
         if (index != ignoreIndex
+            && m_model->channelAt(index).slaveId == slaveId
             && m_model->channelAt(index).registerAddress == address) {
             QMessageBox::warning(this, LANGUAGE("LG_channel_mgrTitle"),
                                  LANGUAGE("LG_channel_errDuplicateAddr"));
@@ -361,6 +372,7 @@ bool ChannelEditDialog::readForm(ChannelItem *item, int ignoreIndex)
     }
 
     result.name = name;
+    result.slaveId = slaveId;
     result.registerAddress = address;
     result.dataType = static_cast<ChannelDataType>(m_typeCombo->currentData().toInt());
     result.unit = m_unitEdit->text().trimmed();

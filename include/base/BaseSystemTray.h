@@ -37,6 +37,8 @@ public:
     // 显示系统托盘图标
     void showTrayIcon();
     void hideTrayIcon();
+    // 弹出系统托盘气泡通知（报警/故障提醒）
+    void showMessage(const QString &title, const QString &text, int timeoutMs = 5000);
 
 signals:
     void trayIconClicked(TrayTriggers trigger);

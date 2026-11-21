@@ -1,6 +1,8 @@
 #ifndef CHANNELMODEL_H
 #define CHANNELMODEL_H
 
+#include "polltask.h"
+
 #include <QColor>
 #include <QObject>
 #include <QString>
@@ -16,6 +18,7 @@ enum class ChannelDataType {
 struct ChannelItem {
     QString name;                // 通道业务名称，如 "温度"、"压力"
     QString unit;                // 工程单位，如 "℃"、"MPa"
+    quint8 slaveId = 1;          // 所属 Modbus 从站地址，支持同工程混合多从站
     quint16 registerAddress = 0; // 对应 Modbus 寄存器地址（起始 0）
     ChannelDataType dataType = ChannelDataType::Unsigned16;  // 寄存器数据类型
     double scale = 0.1;          // 换算系数：工程值 = 原始寄存器值 × scale
@@ -71,6 +74,10 @@ public:
     // 按寄存器地址查找通道下标，未找到返回 -1。线性扫描，通道数量大时慎用
     int indexOfAddress(quint16 address) const;
 
+    // 把启用通道按（从站 + 功能码 + 地址连续）切分为轮询任务。
+    // 同从站地址断档会拆成多段，超过单次读取上限会继续切分；返回结果可直接交给 SerialWorker。
+    QVector<PollTask> buildPollTasks(ModbusFunctionCode functionCode) const;
+
     // 校验启用通道的寄存器地址是否连续且不重复。
     // 内部逻辑：收集所有 enabled=true 的地址 → 升序排序 → 逐项检查是否为前一项 + 1。
     // 少于 2 个启用通道时自动视为通过。
@@ -87,10 +94,12 @@ public:
     void setBufferSize(int count);       // 设置缓存点数，<1 会被钳为 1，发射 bufferSizeChanged
 
     // ---- 数据更新 ----
-    // 用一轮 Modbus 采集到的寄存器值批量更新通道。
+    // 用一轮 Modbus 采集到的寄存器值批量更新通道（不区分从站，兼容旧调用）。
     // 映射逻辑：values[offset] → 寄存器地址 (startAddress + offset) 对应的 ChannelItem。
     // 地址未注册或通道已禁用则跳过，匹配到的通道写入 rawValue 并发射 channelValueChanged。
     void updateRawValues(quint16 startAddress, const QVector<quint16> &values);
+    // 多从站版本：额外按 slaveId 过滤，避免同地址不同从站串数据
+    void updateRawValues(quint8 slaveId, quint16 startAddress, const QVector<quint16> &values);
     // 单通道原始值更新，index 越界静默忽略，成功后发射 channelValueChanged
     void setChannelRawValue(int index, quint16 rawValue);
 

@@ -10,12 +10,16 @@
 class SerialPortHelper;
 class QTimer;
 
-// Modbus 功能码（本项目只使用读类功能码）
+// Modbus 功能码（读类 + 写类）
 enum class ModbusFunctionCode : quint8 {
-    ReadCoils = 0x01,             // 读线圈
-    ReadDiscreteInputs = 0x02,    // 读离散输入
-    ReadHoldingRegisters = 0x03,  // 读保持寄存器
-    ReadInputRegisters = 0x04,    // 读输入寄存器
+    ReadCoils = 0x01,              // 读线圈
+    ReadDiscreteInputs = 0x02,     // 读离散输入
+    ReadHoldingRegisters = 0x03,   // 读保持寄存器
+    ReadInputRegisters = 0x04,     // 读输入寄存器
+    WriteSingleCoil = 0x05,        // 写单个线圈
+    WriteSingleRegister = 0x06,    // 写单个寄存器
+    WriteMultipleCoils = 0x0F,     // 写多个线圈
+    WriteMultipleRegisters = 0x10, // 写多个寄存器
 };
 
 // 协议层错误
@@ -31,6 +35,7 @@ enum class ModbusError {
     Timeout,             // 应答超时
     SerialError,         // 串口发送/连接异常
     Busy,                // 上一请求未完成
+    WriteEchoMismatch,   // 写应答回显与请求不一致
 };
 
 // 解析后的应答帧
@@ -74,6 +79,13 @@ public:
     //   - quantity 非法（发 IllegalQuantity）
     bool readRegisters(ModbusFunctionCode code, quint16 startAddress, quint16 quantity);
 
+    // ---- 写操作（05/06/0F/10）----
+    // 返回值语义与 readRegisters 一致：false 表示请求未发出（已发 requestFailed）
+    bool writeSingleCoil(quint16 address, bool on);
+    bool writeSingleRegister(quint16 address, quint16 value);
+    bool writeMultipleCoils(quint16 startAddress, const QVector<bool> &values);
+    bool writeMultipleRegisters(quint16 startAddress, const QVector<quint16> &values);
+
     // ---- 静态工具 ----
     // 标准 Modbus CRC16，多项式 0xA001，初值 0xFFFF
     static quint16 crc16(const QByteArray &data);
@@ -92,6 +104,8 @@ signals:
     // 成功应答：startAddress 是请求时的起始地址，values 寄存器值按请求顺序排列
     void registersRead(quint16 startAddress, const QVector<quint16> &values, qint64 rttMs);
     void bitsRead(quint16 startAddress, const QVector<bool> &values, qint64 rttMs);
+    // 写操作成功：从站回显与请求一致后发出
+    void writeCompleted(quint8 functionCode, quint16 startAddress, quint16 quantity);
     // 一笔请求最终失败（协议层重试已用尽，或配置非法）
     void requestFailed(ModbusError error, const QString &message);
     // 从站返回 Modbus 异常码应答
@@ -104,6 +118,15 @@ private slots:
 
 private:
     bool validateQuantity(ModbusFunctionCode code, quint16 quantity) const;
+    // 校验写请求参数（数量/长度上限），失败时发 requestFailed 并返回 false
+    bool validateWrite(ModbusFunctionCode code, quint16 quantity) const;
+    // 组写请求帧（05/06/0F/10）
+    static QByteArray buildWriteRequest(quint8 slaveId, ModbusFunctionCode code,
+                                        quint16 startAddress, quint16 quantity,
+                                        const QByteArray &payload);
+    // 写请求公共入口：检查空闲/串口/参数后发起事务
+    bool startWrite(ModbusFunctionCode code, quint16 startAddress, quint16 quantity,
+                    const QByteArray &payload, const QByteArray &request);
     void startTransaction(const QByteArray &request);
     void handleFrame(const QByteArray &frame, qint64 rttMs);
     void retryOrFail(ModbusError error, const QString &message);
@@ -111,6 +134,8 @@ private:
 
     static constexpr int kMaxCoilsPerRead = 2000;
     static constexpr int kMaxRegistersPerRead = 125;
+    static constexpr int kMaxCoilsPerWrite = 1968;
+    static constexpr int kMaxRegistersPerWrite = 123;
 
     SerialPortHelper *m_serial = nullptr;
     QTimer *m_timeoutTimer = nullptr;
@@ -122,6 +147,7 @@ private:
     int m_retryCount = 0;
 
     bool m_busy = false;
+    bool m_writeOperation = false;   // 当前事务是否为写操作（05/06/0F/10）
     ModbusFunctionCode m_functionCode = ModbusFunctionCode::ReadHoldingRegisters;
     quint16 m_startAddress = 0;
     quint16 m_quantity = 0;

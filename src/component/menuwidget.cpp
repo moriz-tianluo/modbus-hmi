@@ -3,6 +3,7 @@
 #include "Language.h"
 
 #include <QAction>
+#include <QActionGroup>
 #include <QMenu>
 
 menuWidget::menuWidget(QWidget *parent)
@@ -146,6 +147,12 @@ void menuWidget::initDeviceMenu()
 
     m_alarmRuleAction = m_deviceMenu->addAction(QString());
     connect(m_alarmRuleAction, &QAction::triggered, this, &menuWidget::alarmRuleTriggered);
+
+    m_deviceMenu->addSeparator();
+
+    m_writeRegisterAction = m_deviceMenu->addAction(QString());
+    connect(m_writeRegisterAction, &QAction::triggered,
+            this, &menuWidget::writeRegisterTriggered);
 }
 
 void menuWidget::initViewMenu()
@@ -197,6 +204,30 @@ void menuWidget::initToolsMenu()
 
     m_retentionAction = m_toolsMenu->addAction(QString());
     connect(m_retentionAction, &QAction::triggered, this, &menuWidget::retentionTriggered);
+
+    m_toolsMenu->addSeparator();
+
+    m_alarmHistoryAction = m_toolsMenu->addAction(QString());
+    connect(m_alarmHistoryAction, &QAction::triggered,
+            this, &menuWidget::alarmHistoryTriggered);
+
+    m_databaseBackupAction = m_toolsMenu->addAction(QString());
+    connect(m_databaseBackupAction, &QAction::triggered,
+            this, &menuWidget::databaseBackupTriggered);
+
+    m_databaseVacuumAction = m_toolsMenu->addAction(QString());
+    connect(m_databaseVacuumAction, &QAction::triggered,
+            this, &menuWidget::databaseVacuumTriggered);
+
+    m_toolsMenu->addSeparator();
+
+    m_curveScreenshotAction = m_toolsMenu->addAction(QString());
+    connect(m_curveScreenshotAction, &QAction::triggered,
+            this, &menuWidget::curveScreenshotTriggered);
+
+    m_curveExportAction = m_toolsMenu->addAction(QString());
+    connect(m_curveExportAction, &QAction::triggered,
+            this, &menuWidget::curveExportTriggered);
 }
 
 void menuWidget::initHelpMenu()
@@ -208,8 +239,61 @@ void menuWidget::initHelpMenu()
 
     m_helpMenu->addSeparator();
 
+    // 语言子菜单：跟随系统 / 中文 / 英文，互斥勾选
+    m_languageMenu = m_helpMenu->addMenu(QString());
+    QActionGroup *languageGroup = new QActionGroup(m_languageMenu);
+    languageGroup->setExclusive(true);
+
+    m_languageAutoAction = m_languageMenu->addAction(QString());
+    m_languageAutoAction->setCheckable(true);
+    m_languageAutoAction->setData(-1);
+    languageGroup->addAction(m_languageAutoAction);
+
+    m_languageZhAction = m_languageMenu->addAction(QString());
+    m_languageZhAction->setCheckable(true);
+    m_languageZhAction->setData(0);
+    languageGroup->addAction(m_languageZhAction);
+
+    m_languageEnAction = m_languageMenu->addAction(QString());
+    m_languageEnAction->setCheckable(true);
+    m_languageEnAction->setData(1);
+    languageGroup->addAction(m_languageEnAction);
+
+    connect(m_languageAutoAction, &QAction::triggered,
+            this, &menuWidget::onLanguageActionTriggered);
+    connect(m_languageZhAction, &QAction::triggered,
+            this, &menuWidget::onLanguageActionTriggered);
+    connect(m_languageEnAction, &QAction::triggered,
+            this, &menuWidget::onLanguageActionTriggered);
+    m_languageAutoAction->setChecked(true);
+
+    m_helpMenu->addSeparator();
+
     m_aboutAction = m_helpMenu->addAction(QString());
     connect(m_aboutAction, &QAction::triggered, this, &menuWidget::aboutTriggered);
+}
+
+void menuWidget::setLanguageType(int languageType)
+{
+    QAction *target = m_languageAutoAction;
+    if (languageType == 0) {
+        target = m_languageZhAction;
+    } else if (languageType == 1) {
+        target = m_languageEnAction;
+    }
+
+    if (target != nullptr) {
+        target->setChecked(true);
+    }
+}
+
+void menuWidget::onLanguageActionTriggered()
+{
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action == nullptr) {
+        return;
+    }
+    emit languageTriggered(action->data().toInt());
 }
 
 void menuWidget::setRecentProjects(const QStringList &paths)
@@ -273,6 +357,7 @@ void menuWidget::retranslateMenus()
     m_stopCollectAction->setText(LANGUAGE("LG_menu_action_stopCollect"));
     m_channelManagerAction->setText(LANGUAGE("LG_menu_action_channelManager"));
     m_alarmRuleAction->setText(LANGUAGE("LG_menu_action_alarmRule"));
+    m_writeRegisterAction->setText(LANGUAGE("LG_menu_action_writeRegister"));
 
     m_showLeftAction->setText(LANGUAGE("LG_menu_action_showLeft"));
     m_showCurveAction->setText(LANGUAGE("LG_menu_action_showCurve"));
@@ -282,9 +367,19 @@ void menuWidget::retranslateMenus()
 
     m_openDataDirAction->setText(LANGUAGE("LG_menu_action_openDataDir"));
     m_commLogAction->setText(LANGUAGE("LG_menu_action_commLog"));
+    m_alarmHistoryAction->setText(LANGUAGE("LG_menu_action_alarmHistory"));
+    m_databaseBackupAction->setText(LANGUAGE("LG_menu_action_dbBackup"));
+    m_databaseVacuumAction->setText(LANGUAGE("LG_menu_action_dbVacuum"));
+    m_curveScreenshotAction->setText(LANGUAGE("LG_menu_action_curveScreenshot"));
+    m_curveExportAction->setText(LANGUAGE("LG_menu_action_curveExport"));
     m_retentionAction->setText(LANGUAGE("LG_menu_action_retention"));
     m_aboutAction->setText(LANGUAGE("LG_menu_action_about"));
     m_quickStartAction->setText(LANGUAGE("LG_menu_action_quickStart"));
+
+    m_languageMenu->setTitle(LANGUAGE("LG_menu_action_language"));
+    m_languageAutoAction->setText(LANGUAGE("LG_language_followSystem"));
+    m_languageZhAction->setText(LANGUAGE("LG_language_chinese"));
+    m_languageEnAction->setText(LANGUAGE("LG_language_english"));
 }
 
 void menuWidget::updateActionStates(bool connected, bool polling)
@@ -295,6 +390,8 @@ void menuWidget::updateActionStates(bool connected, bool polling)
     m_stopCollectAction->setEnabled(polling);
     m_exportCsvAction->setEnabled(connected);
     m_refreshPortAction->setEnabled(!polling);
+    // 写操作必须已连接串口
+    m_writeRegisterAction->setEnabled(connected);
 
     // 采集中不允许切换工程文件，避免通道映射与采集参数错位
     m_newProjectAction->setEnabled(!polling);

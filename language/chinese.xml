@@ -12,6 +12,8 @@
     <data key="LG_config" value="配置"/>
     <data key="LG_appTitle" value="Modbus HMI  ·  工业上位机采集监控"/>
     <data key="LG_appVersion" value="modbus‑hmi v0.9"/>
+    <data key="LG_app_alreadyRunningTitle" value="Modbus HMI"/>
+    <data key="LG_app_alreadyRunningText" value="程序已在运行，请勿重复启动。"/>
     <data key="LG_menu_file" value="文件"/>
     <data key="LG_menu_edit" value="编辑"/>
     <data key="LG_menu_device" value="设备"/>   
@@ -50,6 +52,31 @@
     <data key="LG_modbus_slave" value="从站号"/>
     <data key="LG_modbus_interval" value="采集周期"/>
     <data key="LG_modbus_tip" value="从站 1 · 3.5 字符判帧 · CRC16"/>
+    <data key="LG_modbus_unsupportedFuncTip" value="当前版本仅支持 03/04 读取寄存器，01/02 暂未开放"/>
+    <data key="LG_modbus_noPollTask" value="没有可用的轮询任务，请先启用至少一个通道"/>
+    <data key="LG_modbus_writeEchoMismatch" value="写应答回显与请求不一致"/>
+    <data key="LG_menu_action_writeRegister" value="写寄存器 / 线圈…"/>
+    <data key="LG_write_title" value="写寄存器 / 线圈"/>
+    <data key="LG_write_protect" value="启用写操作（关闭写保护）"/>
+    <data key="LG_write_mode" value="写入类型"/>
+    <data key="LG_write_mode_singleReg" value="06 写单个寄存器"/>
+    <data key="LG_write_mode_multiReg" value="16 写多个寄存器"/>
+    <data key="LG_write_mode_singleCoil" value="05 写单个线圈"/>
+    <data key="LG_write_mode_multiCoil" value="15 写多个线圈"/>
+    <data key="LG_write_slave" value="从站地址"/>
+    <data key="LG_write_address" value="起始地址"/>
+    <data key="LG_write_quantity" value="数量"/>
+    <data key="LG_write_value" value="写入值"/>
+    <data key="LG_write_valueTip" value="十六进制或十进制，多个值用逗号分隔，例如 0x0064, 0x00C8"/>
+    <data key="LG_write_coilValueTip" value="线圈值只能为 0 或 1，多个值用逗号分隔，例如 1, 0, 1"/>
+    <data key="LG_write_btn" value="写入"/>
+    <data key="LG_write_confirmTitle" value="确认写入"/>
+    <data key="LG_write_confirmFmt" value="即将向从站 %1 地址 %2 写入 %3 个值，是否继续？"/>
+    <data key="LG_write_successFmt" value="写入成功：功能码 %1，地址 %2，数量 %3"/>
+    <data key="LG_write_failedFmt" value="写入失败：%1"/>
+    <data key="LG_write_invalidValue" value="写入值格式不正确"/>
+    <data key="LG_write_needProtect" value="请先勾选“启用写操作”"/>
+    <data key="LG_write_notConnected" value="串口未打开，无法写入"/>
     <data key="LG_card_channelConfig" value="通道配置"/>
     <data key="LG_channel_selectAll" value="全选"/>
     <data key="LG_channel_unselectAll" value="全不选"/>
@@ -135,6 +162,42 @@
     <data key="LG_alarm_col_type" value="类型"/>
     <data key="LG_alarm_col_message" value="描述"/>
     <data key="LG_alarm_btn_close" value="关闭"/>
+    <data key="LG_alarm_history_title" value="报警记录"/>
+    <data key="LG_alarm_history_refresh" value="刷新"/>
+    <data key="LG_alarm_history_ackSelected" value="确认选中"/>
+    <data key="LG_alarm_history_ackAll" value="全部确认"/>
+    <data key="LG_alarm_history_export" value="导出 CSV"/>
+    <data key="LG_alarm_history_close" value="关闭"/>
+    <data key="LG_alarm_history_colTime" value="时间"/>
+    <data key="LG_alarm_history_colLevel" value="等级"/>
+    <data key="LG_alarm_history_colMessage" value="描述"/>
+    <data key="LG_alarm_history_colState" value="状态"/>
+    <data key="LG_alarm_level_alarm" value="报警"/>
+    <data key="LG_alarm_level_fault" value="故障"/>
+    <data key="LG_alarm_state_acked" value="已确认"/>
+    <data key="LG_alarm_state_pending" value="未确认"/>
+    <data key="LG_alarm_statsFmt" value="共 %1 条：报警 %2，故障 %3，未确认 %4"/>
+    <data key="LG_alarm_ackDoneFmt" value="已确认 %1 条"/>
+    <data key="LG_alarm_exportTitle" value="导出报警记录"/>
+    <data key="LG_alarm_exportDoneFmt" value="已导出 %1 条到：%2"/>
+    <data key="LG_alarm_exportFailFmt" value="导出失败：%1"/>
+    <data key="LG_menu_action_alarmHistory" value="报警记录…"/>
+    <data key="LG_menu_action_dbBackup" value="备份数据库…"/>
+    <data key="LG_menu_action_dbVacuum" value="整理数据库"/>
+    <data key="LG_menu_action_curveScreenshot" value="曲线截图…"/>
+    <data key="LG_menu_action_curveExport" value="曲线数据导出…"/>
+    <data key="LG_curve_screenshotTitle" value="保存曲线截图"/>
+    <data key="LG_curve_screenshotFilter" value="PNG 图片 (*.png)"/>
+    <data key="LG_curve_screenshotDone" value="曲线截图已保存"/>
+    <data key="LG_curve_exportTitle" value="导出曲线数据"/>
+    <data key="LG_curve_exportDone" value="曲线数据已导出"/>
+    <data key="LG_curve_exportFail" value="导出失败，请检查文件是否可写"/>
+    <data key="LG_db_backup_title" value="备份数据库"/>
+    <data key="LG_db_backup_filter" value="SQLite 数据库 (*.db)"/>
+    <data key="LG_db_backup_done" value="数据库备份完成"/>
+    <data key="LG_db_backup_failFmt" value="备份失败：%1"/>
+    <data key="LG_db_vacuum_done" value="数据库整理完成"/>
+    <data key="LG_db_vacuum_failFmt" value="数据库整理失败：%1"/>
     <data key="LG_alarm_msg_reconnecting" value="串口断线，正在第 %1 次重连"/>
     <data key="LG_card_dataStore" value="数据存储"/>
     <data key="LG_store_timeRange" value="最近 1 小时"/>
@@ -239,6 +302,7 @@
     <data key="LG_channel_formTitle" value="通道属性"/>
     <data key="LG_channel_formName" value="名称"/>
     <data key="LG_channel_formAddr" value="寄存器地址"/>
+    <data key="LG_channel_formSlave" value="从站地址"/>
     <data key="LG_channel_formType" value="数据类型"/>
     <data key="LG_channel_formUnit" value="单位"/>
     <data key="LG_channel_formScale" value="换算系数"/>
@@ -284,6 +348,7 @@
     <data key="LG_history_col_raw" value="原始值"/>
     <data key="LG_history_col_value" value="工程值"/>
     <data key="LG_history_countFmt" value="共 %1 条"/>
+    <data key="LG_history_truncatedFmt" value="结果超过 %1 条，已截断，请缩小时间范围"/>
     <data key="LG_commlog_title" value="通信日志"/>
     <data key="LG_commlog_pause" value="暂停刷新"/>
     <data key="LG_commlog_btnClear" value="清空"/>
@@ -303,6 +368,10 @@
     <data key="LG_menu_action_curveSettings" value="曲线设置…"/>
     <data key="LG_menu_action_retention" value="数据保留设置…"/>
     <data key="LG_menu_action_quickStart" value="快速上手"/>
+    <data key="LG_menu_action_language" value="语言"/>
+    <data key="LG_language_followSystem" value="跟随系统"/>
+    <data key="LG_language_chinese" value="简体中文"/>
+    <data key="LG_language_english" value="English"/>
     <data key="LG_project_title" value="工程文件"/>
     <data key="LG_project_filter" value="工程文件 (*.mhproj);;所有文件 (*.*)"/>
     <data key="LG_project_openTitle" value="打开工程"/>
@@ -313,6 +382,7 @@
     <data key="LG_project_noChannels" value="工程文件缺少通道配置"/>
     <data key="LG_project_newConfirm" value="新建工程会清空当前通道配置，是否继续？"/>
     <data key="LG_project_needStop" value="请先停止采集再切换工程"/>
+    <data key="LG_project_unsavedTip" value="当前工程有未保存的修改，是否保存？"/>
     <data key="LG_project_savedFmt" value="工程已保存：%1"/>
     <data key="LG_retention_title" value="数据保留设置"/>
     <data key="LG_retention_label" value="采样数据保留天数（0 表示不自动清理）："/>

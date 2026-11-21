@@ -78,6 +78,7 @@ bool ModbusRtu::readRegisters(ModbusFunctionCode code, quint16 startAddress, qui
     }
 
     m_functionCode = code;
+    m_writeOperation = false;
     m_startAddress = startAddress;
     m_quantity = quantity;
     m_retryCount = 0;
@@ -85,6 +86,147 @@ bool ModbusRtu::readRegisters(ModbusFunctionCode code, quint16 startAddress, qui
 
     startTransaction(m_request);
     return true;
+}
+
+bool ModbusRtu::writeSingleCoil(quint16 address, bool on)
+{
+    // 0x05 数据域：0xFF00=闭合，0x0000=断开
+    QByteArray payload;
+    payload.append(static_cast<char>(on ? 0xFF : 0x00));
+    payload.append(static_cast<char>(0x00));
+
+    const QByteArray request = buildWriteRequest(
+        m_slaveId, ModbusFunctionCode::WriteSingleCoil, address, 1, payload);
+    return startWrite(ModbusFunctionCode::WriteSingleCoil, address, 1, payload, request);
+}
+
+bool ModbusRtu::writeSingleRegister(quint16 address, quint16 value)
+{
+    QByteArray payload;
+    payload.append(static_cast<char>((value >> 8) & 0xFF));
+    payload.append(static_cast<char>(value & 0xFF));
+
+    const QByteArray request = buildWriteRequest(
+        m_slaveId, ModbusFunctionCode::WriteSingleRegister, address, 1, payload);
+    return startWrite(ModbusFunctionCode::WriteSingleRegister, address, 1, payload, request);
+}
+
+bool ModbusRtu::writeMultipleCoils(quint16 startAddress, const QVector<bool> &values)
+{
+    if (values.isEmpty() || values.size() > static_cast<int>(kMaxCoilsPerWrite)) {
+        emit requestFailed(ModbusError::IllegalQuantity,
+                           LANGUAGE("LG_modbus_illegalQuantity"));
+        return false;
+    }
+
+    // 0x0F 数据域：字节数 + 按 LSB 在前的位图
+    const int byteCount = (values.size() + 7) / 8;
+    QByteArray payload;
+    payload.append(static_cast<char>(byteCount));
+    QByteArray bits(byteCount, '\0');
+    for (int index = 0; index < values.size(); ++index) {
+        if (values.at(index)) {
+            bits[index / 8] = static_cast<char>(
+                static_cast<quint8>(bits.at(index / 8)) | (1 << (index % 8)));
+        }
+    }
+    payload.append(bits);
+
+    const QByteArray request = buildWriteRequest(
+        m_slaveId, ModbusFunctionCode::WriteMultipleCoils, startAddress,
+        static_cast<quint16>(values.size()), payload);
+    return startWrite(ModbusFunctionCode::WriteMultipleCoils, startAddress,
+                      static_cast<quint16>(values.size()), payload, request);
+}
+
+bool ModbusRtu::writeMultipleRegisters(quint16 startAddress, const QVector<quint16> &values)
+{
+    if (values.isEmpty() || values.size() > static_cast<int>(kMaxRegistersPerWrite)) {
+        emit requestFailed(ModbusError::IllegalQuantity,
+                           LANGUAGE("LG_modbus_illegalQuantity"));
+        return false;
+    }
+
+    // 0x10 数据域：字节数 + 寄存器大端序列
+    QByteArray payload;
+    payload.append(static_cast<char>(values.size() * 2));
+    for (quint16 value : values) {
+        payload.append(static_cast<char>((value >> 8) & 0xFF));
+        payload.append(static_cast<char>(value & 0xFF));
+    }
+
+    const QByteArray request = buildWriteRequest(
+        m_slaveId, ModbusFunctionCode::WriteMultipleRegisters, startAddress,
+        static_cast<quint16>(values.size()), payload);
+    return startWrite(ModbusFunctionCode::WriteMultipleRegisters, startAddress,
+                      static_cast<quint16>(values.size()), payload, request);
+}
+
+bool ModbusRtu::startWrite(ModbusFunctionCode code, quint16 startAddress, quint16 quantity,
+                           const QByteArray &payload, const QByteArray &request)
+{
+    Q_UNUSED(payload)
+
+    if (!m_serial || !m_serial->isOpen()) {
+        emit requestFailed(ModbusError::SerialError, LANGUAGE("LG_modbus_serialNotOpen"));
+        return false;
+    }
+    if (m_busy) {
+        emit requestFailed(ModbusError::Busy, LANGUAGE("LG_modbus_busy"));
+        return false;
+    }
+    if (!validateWrite(code, quantity)) {
+        emit requestFailed(ModbusError::IllegalQuantity, LANGUAGE("LG_modbus_illegalQuantity"));
+        return false;
+    }
+
+    m_writeOperation = true;
+    m_functionCode = code;
+    m_startAddress = startAddress;
+    m_quantity = quantity;
+    m_retryCount = 0;
+    m_request = request;
+
+    startTransaction(m_request);
+    return true;
+}
+
+QByteArray ModbusRtu::buildWriteRequest(quint8 slaveId, ModbusFunctionCode code,
+                                        quint16 startAddress, quint16 quantity,
+                                        const QByteArray &payload)
+{
+    QByteArray frame;
+    frame.append(static_cast<char>(slaveId));
+    frame.append(static_cast<char>(static_cast<quint8>(code)));
+    frame.append(static_cast<char>((startAddress >> 8) & 0xFF));
+    frame.append(static_cast<char>(startAddress & 0xFF));
+    frame.append(static_cast<char>((quantity >> 8) & 0xFF));
+    frame.append(static_cast<char>(quantity & 0xFF));
+    frame.append(payload);
+
+    const quint16 crc = crc16(frame);
+    frame.append(static_cast<char>(crc & 0xFF));
+    frame.append(static_cast<char>((crc >> 8) & 0xFF));
+    return frame;
+}
+
+bool ModbusRtu::validateWrite(ModbusFunctionCode code, quint16 quantity) const
+{
+    if (quantity == 0) {
+        return false;
+    }
+
+    switch (code) {
+    case ModbusFunctionCode::WriteSingleCoil:
+    case ModbusFunctionCode::WriteSingleRegister:
+        return quantity == 1;
+    case ModbusFunctionCode::WriteMultipleCoils:
+        return quantity <= kMaxCoilsPerWrite;
+    case ModbusFunctionCode::WriteMultipleRegisters:
+        return quantity <= kMaxRegistersPerWrite;
+    default:
+        return false;
+    }
 }
 
 quint16 ModbusRtu::crc16(const QByteArray &data)
@@ -157,6 +299,19 @@ bool ModbusRtu::parseResponse(const QByteArray &frame, ModbusFrame *result, Modb
         return false;
     }
 
+    // 写应答与请求同构：从站 + 功能码 + 地址(2) + 数值/数量(2) + CRC，共 8 字节
+    if (result->functionCode == static_cast<quint8>(ModbusFunctionCode::WriteSingleCoil)
+        || result->functionCode == static_cast<quint8>(ModbusFunctionCode::WriteSingleRegister)
+        || result->functionCode == static_cast<quint8>(ModbusFunctionCode::WriteMultipleCoils)
+        || result->functionCode == static_cast<quint8>(ModbusFunctionCode::WriteMultipleRegisters)) {
+        if (data.size() != 6) {
+            *error = ModbusError::InvalidFrame;
+            return false;
+        }
+        result->payload = data.mid(2, 4);
+        return true;
+    }
+
     const int byteCount = static_cast<quint8>(data.at(2));
     if (data.size() != byteCount + 3) {
         *error = ModbusError::ByteCountMismatch;
@@ -220,6 +375,8 @@ QString ModbusRtu::errorString(ModbusError error)
         return LANGUAGE("LG_modbus_serialError");
     case ModbusError::Busy:
         return LANGUAGE("LG_modbus_busy");
+    case ModbusError::WriteEchoMismatch:
+        return LANGUAGE("LG_modbus_writeEchoMismatch");
     }
     return LANGUAGE("LG_modbus_unknownError");
 }
@@ -334,6 +491,24 @@ void ModbusRtu::handleFrame(const QByteArray &frame, qint64 rttMs)
         return;
     }
 
+    // 写操作：从站回显必须与请求的地址/数值一致，避免把旧应答误判为成功
+    if (m_writeOperation) {
+        const QByteArray expectedEcho = m_request.mid(2, 4);
+        const quint8 functionCode = static_cast<quint8>(m_functionCode);
+        const quint16 startAddress = m_startAddress;
+        const quint16 quantity = m_quantity;
+
+        if (parsed.payload != expectedEcho) {
+            retryOrFail(ModbusError::WriteEchoMismatch,
+                        errorString(ModbusError::WriteEchoMismatch));
+            return;
+        }
+
+        finishTransaction();
+        emit writeCompleted(functionCode, startAddress, quantity);
+        return;
+    }
+
     finishTransaction();
 
     if (m_functionCode == ModbusFunctionCode::ReadHoldingRegisters
@@ -365,6 +540,7 @@ void ModbusRtu::finishTransaction()
 {
     m_timeoutTimer->stop();
     m_busy = false;
+    m_writeOperation = false;
     m_retryCount = 0;
     m_request.clear();
 }

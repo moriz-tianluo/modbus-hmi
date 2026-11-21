@@ -1,4 +1,4 @@
-#ifndef SAVEDATASQL_H
+﻿#ifndef SAVEDATASQL_H
 #define SAVEDATASQL_H
 
 #include <QMetaType>
@@ -17,6 +17,18 @@ struct SampleChannelData {
 
 Q_DECLARE_METATYPE(SampleChannelData)
 
+// 报警记录（含确认状态）
+struct AlarmDbRecord {
+    qint64 id = 0;             // 数据库主键
+    qint64 ts = 0;             // 发生时间（Unix 毫秒）
+    int level = 0;             // 0=报警，1=故障
+    QString message;           // 描述
+    bool acknowledged = false; // 是否已确认
+};
+
+Q_DECLARE_METATYPE(AlarmDbRecord)
+Q_DECLARE_METATYPE(QVector<AlarmDbRecord>)
+
 // SQLite 数据存储服务：
 //   - 独立线程运行（由外部 moveToThread + QThread 驱动），UI 只通过队列连接投递数据
 //   - 采样数据先进入内存缓冲，累计 50 个采样轮次后一次性事务提交（WAL 模式）
@@ -32,6 +44,7 @@ public:
     ~SaveDataSQL() override;
 
     static constexpr int kBatchSize = 50;  // 每 50 个采样轮次提交一次
+    static constexpr int kSchemaVersion = 2;  // PRAGMA user_version 当前版本
 
     // CSV 导出字段位掩码，可组合使用
     enum ExportField {
@@ -64,6 +77,22 @@ public slots:
     // 删除早于 days 天前的采样与报警记录，days<=0 时不做任何处理
     void purgeOlderThan(int days);
 
+    // ---- 报警闭环 ----
+    // 查询时间范围 [fromMs, toMs] 内的报警记录（按时间升序，最多 limit 行）
+    void queryAlarms(qint64 fromMs, qint64 toMs, int limit);
+    // 确认（acknowledge）指定 id 的报警；id<=0 表示全部未确认记录
+    void acknowledgeAlarm(qint64 id);
+    // 把报警记录导出为 CSV（包含确认状态列）
+    void exportAlarmsToCsv(qint64 fromMs, qint64 toMs, const QString &filePath);
+
+    // ---- 维护 ----
+    // 整理数据库碎片（VACUUM），结果通过 maintenanceFinished 回传
+    void vacuumDatabase();
+    // 备份数据库到 targetPath（VACUUM INTO，目标文件存在时会先删除）
+    void backupDatabase(const QString &targetPath);
+    // 当前数据库文件大小（字节），通过 databaseSizeReady 回传
+    void queryDatabaseSize();
+
 signals:
     void databaseOpened(bool ok, const QString &errorString);
     void databaseError(const QString &errorString);
@@ -77,12 +106,30 @@ signals:
     void exportFinished(bool ok, qint64 rows, const QString &filePath, const QString &errorString);
     // 自动清理结果：rows = 删除的采样行数，days 为触发清理的保留天数
     void purgedOlderThan(int days, qint64 rows);
+    // 报警查询结果
+    void alarmsQueried(qint64 fromMs, qint64 toMs, const QVector<AlarmDbRecord> &rows);
+    // 报警确认完成：rows = 本次确认的行数
+    void alarmsAcknowledged(qint64 rows);
+    // 报警 CSV 导出结果
+    void alarmExportFinished(bool ok, qint64 rows, const QString &filePath,
+                             const QString &errorString);
+    // 维护操作结果（VACUUM / 备份）：ok=false 时 errorString 说明原因
+    void maintenanceFinished(bool ok, const QString &action, const QString &errorString);
+    // 数据库文件大小（字节）
+    void databaseSizeReady(qint64 bytes);
 
 private:
     // 建表 + 建索引 + 设置 WAL
     bool createTables(QString *errorString);
+    // 按 PRAGMA user_version 升级表结构（索引补充、alarm.acknowledged 列）
+    bool applyMigrations(QString *errorString);
     // 把缓冲区中的采样行事务写入
     bool commitSamples(QString *errorString);
+    // 按时间范围读取报警（queryAlarms / 导出共用）
+    bool selectAlarms(qint64 fromMs, qint64 toMs, int limit, QVector<AlarmDbRecord> *rows,
+                      QString *errorString);
+    // 确保目录存在
+    static bool ensureDirectory(const QString &filePath);
 
     QSqlDatabase m_db;
     QString m_connectionName;

@@ -12,6 +12,8 @@
     <data key="LG_config" value="Configuration"/>
     <data key="LG_appTitle" value="Modbus HMI  ·  Industrial Data Acquisition &amp; Monitoring"/>
     <data key="LG_appVersion" value="modbus-hmi v0.9"/>
+    <data key="LG_app_alreadyRunningTitle" value="Modbus HMI"/>
+    <data key="LG_app_alreadyRunningText" value="The application is already running. Please do not start it again."/>
     <data key="LG_menu_file" value="File"/>
     <data key="LG_menu_edit" value="Edit"/>
     <data key="LG_menu_device" value="Device"/>
@@ -50,6 +52,31 @@
     <data key="LG_modbus_slave" value="Slave ID"/>
     <data key="LG_modbus_interval" value="Interval"/>
     <data key="LG_modbus_tip" value="Slave 1 · 3.5 char frame gap · CRC16"/>
+    <data key="LG_modbus_unsupportedFuncTip" value="Only 03/04 register reads are supported in this version; 01/02 are disabled."/>
+    <data key="LG_modbus_noPollTask" value="No polling task available. Enable at least one channel first."/>
+    <data key="LG_modbus_writeEchoMismatch" value="Write response echo does not match the request."/>
+    <data key="LG_menu_action_writeRegister" value="Write Registers / Coils…"/>
+    <data key="LG_write_title" value="Write Registers / Coils"/>
+    <data key="LG_write_protect" value="Enable write (disable write protection)"/>
+    <data key="LG_write_mode" value="Write Type"/>
+    <data key="LG_write_mode_singleReg" value="06 Write Single Register"/>
+    <data key="LG_write_mode_multiReg" value="16 Write Multiple Registers"/>
+    <data key="LG_write_mode_singleCoil" value="05 Write Single Coil"/>
+    <data key="LG_write_mode_multiCoil" value="15 Write Multiple Coils"/>
+    <data key="LG_write_slave" value="Slave ID"/>
+    <data key="LG_write_address" value="Start Address"/>
+    <data key="LG_write_quantity" value="Quantity"/>
+    <data key="LG_write_value" value="Values"/>
+    <data key="LG_write_valueTip" value="Hex or decimal, separated by commas, e.g. 0x0064, 0x00C8"/>
+    <data key="LG_write_coilValueTip" value="Coil values must be 0 or 1, separated by commas, e.g. 1, 0, 1"/>
+    <data key="LG_write_btn" value="Write"/>
+    <data key="LG_write_confirmTitle" value="Confirm Write"/>
+    <data key="LG_write_confirmFmt" value="About to write %3 value(s) to slave %1 address %2. Continue?"/>
+    <data key="LG_write_successFmt" value="Write succeeded: function %1, address %2, quantity %3"/>
+    <data key="LG_write_failedFmt" value="Write failed: %1"/>
+    <data key="LG_write_invalidValue" value="Invalid value format"/>
+    <data key="LG_write_needProtect" value="Please enable write operation first"/>
+    <data key="LG_write_notConnected" value="Serial port is not open. Cannot write."/>
     <data key="LG_card_channelConfig" value="Channel Configuration"/>
     <data key="LG_channel_selectAll" value="Select All"/>
     <data key="LG_channel_unselectAll" value="Deselect All"/>
@@ -135,6 +162,42 @@
     <data key="LG_alarm_col_type" value="Type"/>
     <data key="LG_alarm_col_message" value="Description"/>
     <data key="LG_alarm_btn_close" value="Close"/>
+    <data key="LG_alarm_history_title" value="Alarm History"/>
+    <data key="LG_alarm_history_refresh" value="Refresh"/>
+    <data key="LG_alarm_history_ackSelected" value="Acknowledge Selected"/>
+    <data key="LG_alarm_history_ackAll" value="Acknowledge All"/>
+    <data key="LG_alarm_history_export" value="Export CSV"/>
+    <data key="LG_alarm_history_close" value="Close"/>
+    <data key="LG_alarm_history_colTime" value="Time"/>
+    <data key="LG_alarm_history_colLevel" value="Level"/>
+    <data key="LG_alarm_history_colMessage" value="Description"/>
+    <data key="LG_alarm_history_colState" value="State"/>
+    <data key="LG_alarm_level_alarm" value="Alarm"/>
+    <data key="LG_alarm_level_fault" value="Fault"/>
+    <data key="LG_alarm_state_acked" value="Acknowledged"/>
+    <data key="LG_alarm_state_pending" value="Pending"/>
+    <data key="LG_alarm_statsFmt" value="%1 total: %2 alarms, %3 faults, %4 pending"/>
+    <data key="LG_alarm_ackDoneFmt" value="Acknowledged %1 record(s)"/>
+    <data key="LG_alarm_exportTitle" value="Export Alarm Records"/>
+    <data key="LG_alarm_exportDoneFmt" value="Exported %1 record(s) to: %2"/>
+    <data key="LG_alarm_exportFailFmt" value="Export failed: %1"/>
+    <data key="LG_menu_action_alarmHistory" value="Alarm History…"/>
+    <data key="LG_menu_action_dbBackup" value="Backup Database…"/>
+    <data key="LG_menu_action_dbVacuum" value="Vacuum Database"/>
+    <data key="LG_menu_action_curveScreenshot" value="Curve Screenshot…"/>
+    <data key="LG_menu_action_curveExport" value="Export Curve Data…"/>
+    <data key="LG_curve_screenshotTitle" value="Save Curve Screenshot"/>
+    <data key="LG_curve_screenshotFilter" value="PNG Image (*.png)"/>
+    <data key="LG_curve_screenshotDone" value="Curve screenshot saved"/>
+    <data key="LG_curve_exportTitle" value="Export Curve Data"/>
+    <data key="LG_curve_exportDone" value="Curve data exported"/>
+    <data key="LG_curve_exportFail" value="Export failed. Please check whether the file is writable."/>
+    <data key="LG_db_backup_title" value="Backup Database"/>
+    <data key="LG_db_backup_filter" value="SQLite Database (*.db)"/>
+    <data key="LG_db_backup_done" value="Database backup completed"/>
+    <data key="LG_db_backup_failFmt" value="Backup failed: %1"/>
+    <data key="LG_db_vacuum_done" value="Database vacuum completed"/>
+    <data key="LG_db_vacuum_failFmt" value="Database vacuum failed: %1"/>
     <data key="LG_alarm_msg_reconnecting" value="Serial disconnected, reconnecting (attempt %1)"/>
     <data key="LG_card_dataStore" value="Data Storage"/>
     <data key="LG_store_timeRange" value="Last 1 hour"/>
@@ -239,6 +302,7 @@
     <data key="LG_channel_formTitle" value="Channel Properties"/>
     <data key="LG_channel_formName" value="Name"/>
     <data key="LG_channel_formAddr" value="Register Address"/>
+    <data key="LG_channel_formSlave" value="Slave ID"/>
     <data key="LG_channel_formType" value="Data Type"/>
     <data key="LG_channel_formUnit" value="Unit"/>
     <data key="LG_channel_formScale" value="Scale Factor"/>
@@ -262,7 +326,7 @@
     <data key="LG_channel_errDuplicateAddr" value="Register address is already used by another channel"/>
     <data key="LG_channel_errInvalidRange" value="Range max must be greater than range min"/>
     <data key="LG_channel_removeTitle" value="Remove Channel"/>
-    <data key="LG_channel_removeTextFmt" value="Remove channel \"%1\"?"/>
+    <data key="LG_channel_removeTextFmt" value="Remove channel &quot;%1&quot;?"/>
     <data key="LG_alarm_ruleTitle" value="Alarm Rules"/>
     <data key="LG_alarm_ruleTip" value="A channel alarm is recorded only after the engineering value exceeds the high/low limit for the configured consecutive cycles. A recovery record is added when it returns to normal."/>
     <data key="LG_alarm_ruleEnable" value="Enable"/>
@@ -284,6 +348,7 @@
     <data key="LG_history_col_raw" value="Raw"/>
     <data key="LG_history_col_value" value="Value"/>
     <data key="LG_history_countFmt" value="%1 records"/>
+    <data key="LG_history_truncatedFmt" value="More than %1 rows matched. Results are truncated; narrow the time range."/>
     <data key="LG_commlog_title" value="Communication Log"/>
     <data key="LG_commlog_pause" value="Pause Refresh"/>
     <data key="LG_commlog_btnClear" value="Clear"/>
@@ -303,6 +368,10 @@
     <data key="LG_menu_action_curveSettings" value="Curve Settings…"/>
     <data key="LG_menu_action_retention" value="Data Retention…"/>
     <data key="LG_menu_action_quickStart" value="Quick Start"/>
+    <data key="LG_menu_action_language" value="Language"/>
+    <data key="LG_language_followSystem" value="Follow System"/>
+    <data key="LG_language_chinese" value="Chinese"/>
+    <data key="LG_language_english" value="English"/>
     <data key="LG_project_title" value="Project File"/>
     <data key="LG_project_filter" value="Project Files (*.mhproj);;All Files (*.*)"/>
     <data key="LG_project_openTitle" value="Open Project"/>
@@ -313,6 +382,7 @@
     <data key="LG_project_noChannels" value="Project file has no channel configuration"/>
     <data key="LG_project_newConfirm" value="Creating a new project clears the current channels. Continue?"/>
     <data key="LG_project_needStop" value="Stop acquisition before switching projects"/>
+    <data key="LG_project_unsavedTip" value="The current project has unsaved changes. Save now?"/>
     <data key="LG_project_savedFmt" value="Project saved: %1"/>
     <data key="LG_retention_title" value="Data Retention"/>
     <data key="LG_retention_label" value="Keep sampled data for (days, 0 = never purge):"/>

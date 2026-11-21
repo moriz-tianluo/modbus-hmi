@@ -2,12 +2,17 @@
 #include "ui_modbussetwidget.h"
 #include "Language.h"
 
+#include <QStandardItem>
+#include <QStandardItemModel>
+
 ModbusSetWidget::ModbusSetWidget(QWidget *parent)
     : BaseWidget(parent)
     , ui(new Ui::ModbusSetWidget)
 {
     ui->setupUi(this);
     setAttribute(Qt::WA_StyledBackground, true);
+    initConnections();
+    disableUnsupportedFunctionCodes();
     languageChange();
 }
 
@@ -25,6 +30,40 @@ void ModbusSetWidget::languageChange()
     ui->labelSlaveId->setText(LANGUAGE("LG_modbus_slave"));
     ui->labelInterval->setText(LANGUAGE("LG_modbus_interval"));
     ui->labelTip->setText(LANGUAGE("LG_modbus_tip"));
+    ui->comboBoxFuncCode->setToolTip(LANGUAGE("LG_modbus_unsupportedFuncTip"));
+}
+
+void ModbusSetWidget::initConnections()
+{
+    connect(ui->comboBoxFuncCode, &QComboBox::currentIndexChanged,
+            this, &ModbusSetWidget::settingsChanged);
+    connect(ui->comboBoxStartAddr, &QComboBox::currentIndexChanged,
+            this, &ModbusSetWidget::settingsChanged);
+    connect(ui->comboBoxQuantity, &QComboBox::currentIndexChanged,
+            this, &ModbusSetWidget::settingsChanged);
+    connect(ui->comboBoxSlaveId, &QComboBox::currentIndexChanged,
+            this, &ModbusSetWidget::settingsChanged);
+    connect(ui->comboBoxInterval, &QComboBox::currentIndexChanged,
+            this, &ModbusSetWidget::settingsChanged);
+}
+
+void ModbusSetWidget::disableUnsupportedFunctionCodes()
+{
+    // 采集链路目前只按寄存器读取，01/02 选项禁用，避免误选后无数据
+    QStandardItemModel *model =
+        qobject_cast<QStandardItemModel *>(ui->comboBoxFuncCode->model());
+    if (model != nullptr) {
+        for (int i = 2; i < model->rowCount(); ++i) {
+            QStandardItem *item = model->item(i);
+            if (item != nullptr) {
+                item->setEnabled(false);
+            }
+        }
+    }
+
+    if (ui->comboBoxFuncCode->currentIndex() > 1) {
+        ui->comboBoxFuncCode->setCurrentIndex(0);
+    }
 }
 
 quint8 ModbusSetWidget::currentSlaveId() const
@@ -47,18 +86,17 @@ int ModbusSetWidget::currentIntervalMs() const
 
 ModbusFunctionCode ModbusSetWidget::currentFunctionCode() const
 {
-    // 下拉框 index: 0=03读保持, 1=04读输入, 2=01读线圈, 3=02读离散输入
+    // 下拉框 index: 0=03读保持, 1=04读输入；01/02 已在界面禁用
     switch (ui->comboBoxFuncCode->currentIndex()) {
-    case 0: return ModbusFunctionCode::ReadHoldingRegisters;
     case 1: return ModbusFunctionCode::ReadInputRegisters;
-    case 2: return ModbusFunctionCode::ReadCoils;
-    case 3: default: return ModbusFunctionCode::ReadDiscreteInputs;
+    case 0:
+    default: return ModbusFunctionCode::ReadHoldingRegisters;
     }
 }
 
 int ModbusSetWidget::currentFunctionCodeIndex() const
 {
-    return ui->comboBoxFuncCode->currentIndex();
+    return qBound(0, ui->comboBoxFuncCode->currentIndex(), 1);
 }
 
 quint16 ModbusSetWidget::currentStartAddress() const
@@ -81,7 +119,8 @@ void ModbusSetWidget::applySettings(int functionCodeIndex, quint16 startAddress,
                                     quint16 quantity, quint8 slaveId, int intervalMs)
 {
     if (functionCodeIndex >= 0 && functionCodeIndex < ui->comboBoxFuncCode->count()) {
-        ui->comboBoxFuncCode->setCurrentIndex(functionCodeIndex);
+        // 历史配置可能保存了已禁用的 01/02，回填时收敛到 03/04
+        ui->comboBoxFuncCode->setCurrentIndex(qBound(0, functionCodeIndex, 1));
     }
 
     // 起始地址下拉项为 "0x0000" 形式，不存在时补入以免回填丢失

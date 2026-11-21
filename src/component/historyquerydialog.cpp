@@ -158,7 +158,15 @@ void HistoryQueryDialog::onSamplesQueried(qint64 fromMs, qint64 toMs,
 
     fillTable(rows);
     fillPlot(rows);
-    m_countLabel->setText(LANGUAGE("LG_history_countFmt").arg(rows.size()));
+
+    // 达到单次查询上限时明确提示，避免用户误以为数据缺失
+    if (rows.size() >= kQueryLimit) {
+        m_countLabel->setText(LANGUAGE("LG_history_truncatedFmt").arg(kQueryLimit));
+        m_countLabel->setStyleSheet(QStringLiteral("color: #E0483F;"));
+    } else {
+        m_countLabel->setText(LANGUAGE("LG_history_countFmt").arg(rows.size()));
+        m_countLabel->setStyleSheet(QString());
+    }
 }
 
 // ============== 结果展示 ==============

@@ -97,6 +97,23 @@ private slots:
     void onChannelManagerTriggered();
     void onAlarmRuleTriggered();
     void onCommLogTriggered();
+    // 写寄存器 / 线圈
+    void onWriteRegisterTriggered();
+    void onWriteRegistersRequested(quint8 slaveId, quint16 address,
+                                   const QVector<quint16> &values);
+    void onWriteSingleCoilRequested(quint8 slaveId, quint16 address, bool on);
+    void onWriteCoilsRequested(quint8 slaveId, quint16 address, const QVector<bool> &values);
+    // 报警记录 / 数据库维护
+    void onAlarmHistoryTriggered();
+    void onDatabaseBackupTriggered();
+    void onDatabaseVacuumTriggered();
+    void onDatabaseMaintenanceFinished(bool ok, const QString &action,
+                                       const QString &errorString);
+    // 曲线导出
+    void onCurveScreenshotTriggered();
+    void onCurveExportTriggered();
+    // 报警提醒：声音 + 托盘气泡
+    void onAlarmRecordAdded(int level, const QString &message);
     // 报警规则对话框确认后更新去抖次数
     void onAlarmDebounceChanged(int count);
     // 通道增删改后重置越限计数状态
@@ -119,6 +136,8 @@ private slots:
     void onQuickStartTriggered();
     // 定时把数据库总记录数刷新到实时数据卡片脚注
     void onDbTipTimerTimeout();
+    // 界面语言切换（来自帮助 → 语言菜单）
+    void onLanguageTriggered(int languageType);
 
     // ---- SerialWorker 状态上收 ----
     void onWorkerPortOpened(const QString &portName);
@@ -127,7 +146,11 @@ private slots:
     void onWorkerReconnectStateChanged(bool reconnecting, int attempt);
     void onWorkerPollingStateChanged(bool running);
     void onWorkerPollFailed(ModbusError error, const QString &message);
-    void onWorkerDataUpdated(quint16 startAddress, const QVector<quint16> &values, qint64 rttMs);
+    void onWorkerDataUpdated(quint8 slaveId, quint16 startAddress,
+                             const QVector<quint16> &values, qint64 rttMs);
+    // 写操作结果
+    void onWorkerWriteSucceeded(quint8 functionCode, quint16 startAddress, quint16 quantity);
+    void onWorkerWriteFailed(ModbusError error, const QString &message);
     // 数据库写入出错（只更新状态栏，避免再次触发报警造成递归）
     void onDatabaseError(const QString &message);
 
@@ -154,6 +177,22 @@ private:
     void saveScreenshot();
     // 按当前连接/采集状态刷新菜单动作可用性
     void refreshActionStates();
+
+    // ---- 界面语言 ----
+    // 应用语言：languageType -1 跟随系统 / 0 中文 / 1 英文；persist=true 时写入配置
+    void applyLanguage(int languageType, bool persist);
+
+    // ---- 工程脏标记 ----
+    // 监听会改变工程内容的信号，统一标记「未保存」
+    void initProjectDirtyTracking();
+    // 标记工程已修改并刷新标题栏
+    void markProjectDirty();
+    // 清除未保存标记并刷新标题栏
+    void clearProjectDirty();
+    // 有未保存修改时询问保存；返回 false 表示用户取消当前操作
+    bool maybeSaveProject();
+    // 保存到当前工程文件（不存在时弹文件对话框），成功返回 true
+    bool saveProjectInteractive();
 
     // ---- 报警阈值判定 ----
     // 每轮采集后检查各通道工程值，连续越限达到去抖次数才记录报警，恢复后记录解除
@@ -224,6 +263,10 @@ private:
 
     // 定时刷新数据库总记录数（实时数据卡片脚注）
     QTimer *m_dbTipTimer = nullptr;
+
+    // ---- 工程未保存状态 ----
+    bool m_projectDirty = false;          // 工程内容是否有未保存修改
+    bool m_suppressProjectDirty = false;  // 回填/加载工程期间屏蔽脏标记
 };
 
 #endif // MAINWIDGET_H

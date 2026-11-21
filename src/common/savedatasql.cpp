@@ -16,6 +16,8 @@ SaveDataSQL::SaveDataSQL(QObject *parent)
     // 跨线程队列连接需要注册自定义类型
     qRegisterMetaType<SampleChannelData>("SampleChannelData");
     qRegisterMetaType<QVector<SampleChannelData>>("QVector<SampleChannelData>");
+    qRegisterMetaType<AlarmDbRecord>("AlarmRecord");
+    qRegisterMetaType<QVector<AlarmDbRecord>>("QVector<AlarmDbRecord>");
 }
 
 SaveDataSQL::~SaveDataSQL()
@@ -107,13 +109,14 @@ bool SaveDataSQL::createTables(QString *errorString)
         return false;
     }
 
-    // 报警记录：时间、等级（0=报警，1=故障）、描述
+    // 报警记录：时间、等级（0=报警，1=故障）、描述、确认状态
     const QString alarmSql = QStringLiteral(
         "CREATE TABLE IF NOT EXISTS alarm ("
         " id INTEGER PRIMARY KEY AUTOINCREMENT,"
         " ts INTEGER NOT NULL,"
         " level INTEGER NOT NULL,"
-        " message TEXT NOT NULL)");
+        " message TEXT NOT NULL,"
+        " acknowledged INTEGER NOT NULL DEFAULT 0)");
     if (!query.exec(alarmSql)) {
         *errorString = query.lastError().text();
         return false;
@@ -125,6 +128,51 @@ bool SaveDataSQL::createTables(QString *errorString)
         return false;
     }
 
+    return applyMigrations(errorString);
+}
+
+bool SaveDataSQL::applyMigrations(QString *errorString)
+{
+    QSqlQuery query(m_db);
+    if (!query.exec(QStringLiteral("PRAGMA user_version")) || !query.next()) {
+        *errorString = query.lastError().text();
+        return false;
+    }
+
+    const int version = query.value(0).toInt();
+    if (version >= kSchemaVersion) {
+        return true;
+    }
+
+    // v2：按通道筛选走 (channel, ts) 复合索引，避免全表扫描
+    if (!query.exec(QStringLiteral(
+            "CREATE INDEX IF NOT EXISTS idx_sample_channel_ts ON sample(channel, ts)"))) {
+        *errorString = query.lastError().text();
+        return false;
+    }
+
+    // v2：老库补齐 alarm.acknowledged 列
+    bool hasAcknowledged = false;
+    if (query.exec(QStringLiteral("PRAGMA table_info(alarm)"))) {
+        while (query.next()) {
+            if (query.value(1).toString() == QStringLiteral("acknowledged")) {
+                hasAcknowledged = true;
+                break;
+            }
+        }
+    }
+    if (!hasAcknowledged) {
+        if (!query.exec(QStringLiteral(
+                "ALTER TABLE alarm ADD COLUMN acknowledged INTEGER NOT NULL DEFAULT 0"))) {
+            *errorString = query.lastError().text();
+            return false;
+        }
+    }
+
+    if (!query.exec(QStringLiteral("PRAGMA user_version = %1").arg(kSchemaVersion))) {
+        *errorString = query.lastError().text();
+        return false;
+    }
     return true;
 }
 
@@ -392,4 +440,184 @@ void SaveDataSQL::purgeOlderThan(int days)
     alarmQuery.exec();
 
     emit purgedOlderThan(days, rows);
+}
+
+void SaveDataSQL::queryAlarms(qint64 fromMs, qint64 toMs, int limit)
+{
+    QVector<AlarmDbRecord> rows;
+    QString error;
+    if (m_opened) {
+        selectAlarms(fromMs, toMs, limit, &rows, &error);
+        if (!error.isEmpty()) {
+            emit databaseError(error);
+        }
+    }
+    emit alarmsQueried(fromMs, toMs, rows);
+}
+
+bool SaveDataSQL::selectAlarms(qint64 fromMs, qint64 toMs, int limit,
+                               QVector<AlarmDbRecord> *rows, QString *errorString)
+{
+    QString sql = QStringLiteral(
+        "SELECT id, ts, level, message, acknowledged FROM alarm"
+        " WHERE ts >= ? AND ts <= ? ORDER BY ts ASC, id ASC");
+    if (limit > 0) {
+        sql += QStringLiteral(" LIMIT %1").arg(limit);
+    }
+
+    QSqlQuery query(m_db);
+    if (!query.prepare(sql)) {
+        *errorString = query.lastError().text();
+        return false;
+    }
+    query.addBindValue(fromMs);
+    query.addBindValue(toMs);
+    if (!query.exec()) {
+        *errorString = query.lastError().text();
+        return false;
+    }
+
+    while (query.next()) {
+        AlarmDbRecord record;
+        record.id = query.value(0).toLongLong();
+        record.ts = query.value(1).toLongLong();
+        record.level = query.value(2).toInt();
+        record.message = query.value(3).toString();
+        record.acknowledged = query.value(4).toInt() != 0;
+        rows->append(record);
+    }
+    return true;
+}
+
+void SaveDataSQL::acknowledgeAlarm(qint64 id)
+{
+    if (!m_opened) {
+        emit alarmsAcknowledged(0);
+        return;
+    }
+
+    QSqlQuery query(m_db);
+    if (id > 0) {
+        query.prepare(QStringLiteral("UPDATE alarm SET acknowledged = 1 WHERE id = ?"));
+        query.addBindValue(id);
+    } else {
+        query.prepare(QStringLiteral("UPDATE alarm SET acknowledged = 1"
+                                     " WHERE acknowledged = 0"));
+    }
+
+    if (!query.exec()) {
+        emit databaseError(query.lastError().text());
+        emit alarmsAcknowledged(0);
+        return;
+    }
+    emit alarmsAcknowledged(query.numRowsAffected());
+}
+
+void SaveDataSQL::exportAlarmsToCsv(qint64 fromMs, qint64 toMs, const QString &filePath)
+{
+    if (!m_opened) {
+        emit alarmExportFinished(false, 0, filePath, QString());
+        return;
+    }
+
+    QVector<AlarmDbRecord> rows;
+    QString error;
+    if (!selectAlarms(fromMs, toMs, 0, &rows, &error)) {
+        emit alarmExportFinished(false, 0, filePath, error);
+        return;
+    }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        emit alarmExportFinished(false, 0, filePath, file.errorString());
+        return;
+    }
+
+    QTextStream stream(&file);
+    stream.setEncoding(QStringConverter::Utf8);
+    stream.setGenerateByteOrderMark(true);
+    stream << QStringLiteral("ts,datetime,level,message,acknowledged\n");
+
+    for (const AlarmDbRecord &record : rows) {
+        QString message = record.message;
+        message.replace(QLatin1Char('"'), QStringLiteral("\"\""));
+        if (message.contains(QLatin1Char(',')) || message.contains(QLatin1Char('"'))) {
+            message = QLatin1Char('"') + message + QLatin1Char('"');
+        }
+        stream << record.ts << QLatin1Char(',')
+               << QDateTime::fromMSecsSinceEpoch(record.ts)
+                      .toString(QStringLiteral("yyyy-MM-dd HH:mm:ss.zzz"))
+               << QLatin1Char(',') << record.level << QLatin1Char(',')
+               << message << QLatin1Char(',') << (record.acknowledged ? 1 : 0)
+               << QLatin1Char('\n');
+    }
+    file.close();
+
+    emit alarmExportFinished(true, rows.size(), filePath, QString());
+}
+
+void SaveDataSQL::vacuumDatabase()
+{
+    if (!m_opened) {
+        emit maintenanceFinished(false, QStringLiteral("vacuum"), QString());
+        return;
+    }
+
+    // 先把缓冲区落盘，避免 VACUUM 与未提交事务交叉
+    flush();
+
+    QSqlQuery query(m_db);
+    if (!query.exec(QStringLiteral("VACUUM"))) {
+        emit maintenanceFinished(false, QStringLiteral("vacuum"),
+                                 query.lastError().text());
+        return;
+    }
+    emit maintenanceFinished(true, QStringLiteral("vacuum"), QString());
+}
+
+void SaveDataSQL::backupDatabase(const QString &targetPath)
+{
+    if (!m_opened) {
+        emit maintenanceFinished(false, QStringLiteral("backup"), QString());
+        return;
+    }
+
+    flush();
+
+    // VACUUM INTO 要求目标文件不存在
+    if (QFile::exists(targetPath) && !QFile::remove(targetPath)) {
+        emit maintenanceFinished(false, QStringLiteral("backup"),
+                                 QStringLiteral("cannot overwrite target file"));
+        return;
+    }
+    ensureDirectory(targetPath);
+
+    QString escapedPath = targetPath;
+    escapedPath.replace(QLatin1Char('\''), QStringLiteral("''"));
+
+    QSqlQuery query(m_db);
+    if (!query.exec(QStringLiteral("VACUUM INTO '%1'").arg(escapedPath))) {
+        emit maintenanceFinished(false, QStringLiteral("backup"),
+                                 query.lastError().text());
+        return;
+    }
+    emit maintenanceFinished(true, QStringLiteral("backup"), QString());
+}
+
+void SaveDataSQL::queryDatabaseSize()
+{
+    if (!m_opened) {
+        emit databaseSizeReady(0);
+        return;
+    }
+    emit databaseSizeReady(QFileInfo(m_db.databaseName()).size());
+}
+
+bool SaveDataSQL::ensureDirectory(const QString &filePath)
+{
+    const QFileInfo info(filePath);
+    if (info.dir().exists()) {
+        return true;
+    }
+    return QDir().mkpath(info.dir().absolutePath());
 }

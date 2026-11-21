@@ -46,6 +46,8 @@ public slots:
     // 参数会下发到 ModbusPoller，Poller 配置变化在下一轮生效
     void startPolling(quint8 slaveId, ModbusFunctionCode code,
                       quint16 startAddress, quint16 quantity, int intervalMs);
+    // 多从站 / 多段地址：按任务列表轮询，覆盖 startPolling 的单任务模式
+    void startPollingTasks(const QVector<PollTask> &tasks, int intervalMs);
     // 停止周期采集，无论是否在采集均安全调用
     void stopPolling();
 
@@ -57,6 +59,14 @@ public slots:
     // 重试由 ModbusRtu 帧级承担，Poller 层不再叠加，保证界面「重试 N 次」语义唯一
     void applyCommunicationOptions(int responseTimeoutMs, int retryCount);
 
+    // ---- 写操作（写保护在上层对话框完成，本层只负责串行下发）----
+    void writeSingleRegister(quint8 slaveId, quint16 address, quint16 value);
+    void writeMultipleRegisters(quint8 slaveId, quint16 startAddress,
+                                const QVector<quint16> &values);
+    void writeSingleCoil(quint8 slaveId, quint16 address, bool on);
+    void writeMultipleCoils(quint8 slaveId, quint16 startAddress,
+                            const QVector<bool> &values);
+
 signals:
     // ---- 串口状态 ----
     void portOpened(const QString &portName);              // open 成功或自动重连成功
@@ -65,10 +75,13 @@ signals:
     void reconnectStateChanged(bool reconnecting, int attempt);  // SerialPortHelper 的重连状态透传
 
     // ---- 采集结果 ----
-    // 一轮采集完成。startAddress 为本对象缓存的起始地址（Poller::roundCompleted 不带起始地址，
-    // SerialWorker 在 startPolling / updatePollingConfig 时记录，保证 dataUpdated 与请求配置一致）；
+    // 一轮采集完成。slaveId / startAddress 对应当前轮询任务，
     // values 寄存器值数组，按 Modbus 应答顺序排列
-    void dataUpdated(quint16 startAddress, const QVector<quint16> &values, qint64 rttMs);
+    void dataUpdated(quint8 slaveId, quint16 startAddress,
+                     const QVector<quint16> &values, qint64 rttMs);
+    // 写操作结果（成功时回显已校验）
+    void writeSucceeded(quint8 functionCode, quint16 startAddress, quint16 quantity);
+    void writeFailed(ModbusError error, const QString &message);
     // 一轮采集最终失败（Poller 层 × ModbusRtu 层重试均已用尽）
     void pollFailed(ModbusError error, const QString &message);
     // 轮询运行状态变化：running=true 表示 Poller::start() 已执行且正在调度
@@ -80,11 +93,19 @@ private slots:
     void onPortOpened(const QString &portName);     // SerialPortHelper::portOpened → 更新 m_portOpen + 判断是否恢复采集
     void onPortClosed(const QString &portName);     // SerialPortHelper::portClosed → 异常断开时置 m_resumePolling = true
     void onSerialError(QSerialPort::SerialPortError error, const QString &message);
-    void onRoundCompleted(const QVector<quint16> &values, qint64 rttMs);  // Poller::roundCompleted → 转成 dataUpdated
+    void onRoundCompleted(quint8 slaveId, quint16 startAddress,
+                          const QVector<quint16> &values, qint64 rttMs);
+    void onWriteCompleted(quint8 functionCode, quint16 startAddress, quint16 quantity);
+    // 写操作期间协议层失败：转成 writeFailed 并恢复采集
+    void onWriteRequestFailed(ModbusError error, const QString &message);
 
 private:
     void setupConnections();
     void setPolling(bool running);
+    // 写操作前暂停轮询，保证串行事务
+    void beginWrite(quint8 slaveId);
+    // 写操作结束（成功或失败）：按需恢复轮询
+    void endWrite();
 
     // ---- 内部子对象 ----
     SerialPortHelper *m_serial = nullptr;  // 底层串口通信
@@ -98,6 +119,8 @@ private:
     // 异常断开 → 置 true → 重连成功后 onPortOpened 自动 poller->start() 恢复
     bool m_resumePolling = false;
     quint16 m_startAddress = 0;   // 采集起始地址缓存，dataUpdated 信号需要携带
+    bool m_writePending = false;  // 是否有写事务占用了串口
+    bool m_resumeAfterWrite = false;  // 写事务前是否在采集，写完需恢复
 };
 
 #endif // SERIALWORKER_H
