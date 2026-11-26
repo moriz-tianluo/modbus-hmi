@@ -84,4 +84,8 @@ __pycache__/
 /build*/
 MorizBase/build*/
 /release*/
+# release 打包脚本纳入版本管理，仅忽略 dist 下的打包产物
+!/release/
+!/release/package.ps1
+/release/dist/
 /temp*/

@@ -178,6 +178,7 @@ modbus-hmi/
 ├─ tests/
 │  ├─ test_*.cpp               # Qt Test 单元测试
 │  └─ python/                  # 模拟从站协议测试（无需串口硬件）
+├─ release/                    # 打包脚本（dist 为打包产物，已忽略）
 ├─ tool/sscom/                 # 串口调试助手
 └─ document/                   # 功能拆解与实现说明
 ```
@@ -263,6 +264,30 @@ ctest --test-dir build -C Debug --output-on-failure
 ```bash
 python -m unittest discover -s tests/python -p "test_*.py" -v
 ```
+
+### 6.6 打包发布
+
+`release/package.ps1` 会编译 Release，把 exe、Qt 运行库、插件、语言包与说明一起收集到
+`release/dist/modbus-hmi-v<版本>-win64/`，并压缩为同名 zip：
+
+```powershell
+cd release
+.\package.ps1 -Version 1.0.0
+```
+
+常用参数：
+
+| 参数 | 说明 |
+|---|---|
+| `-Version` | 版本号，决定目录名与压缩包名，默认 `0.9.0` |
+| `-QtDir` | Qt 安装目录（需含 `bin/windeployqt.exe`），默认 `D:\QT6.8\QT6.8\6.8.3\msvc2022_64` |
+| `-BuildDir` | CMake 构建目录，默认 `temp/build-verify`；不存在时自动配置 |
+| `-SkipBuild` | 跳过编译，对已有 Release 产物直接打包 |
+| `-SkipZip` | 只生成打包目录，不压缩 |
+
+打包结果包含：`modbus-hmi.exe`、Qt6 各模块 DLL、`platforms/` `sqldrivers/` 等插件、
+`language/`、`ReadMe.md` 与记录版本和构建时间的 `VERSION.txt`。首次分发前请确认目标机器
+已安装 Microsoft Visual C++ 运行库（脚本已通过 `windeployqt --compiler-runtime` 收集）。
 
 ---
 
