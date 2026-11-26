@@ -215,6 +215,10 @@ void menuWidget::initToolsMenu()
     connect(m_databaseBackupAction, &QAction::triggered,
             this, &menuWidget::databaseBackupTriggered);
 
+    m_databaseRestoreAction = m_toolsMenu->addAction(QString());
+    connect(m_databaseRestoreAction, &QAction::triggered,
+            this, &menuWidget::databaseRestoreTriggered);
+
     m_databaseVacuumAction = m_toolsMenu->addAction(QString());
     connect(m_databaseVacuumAction, &QAction::triggered,
             this, &menuWidget::databaseVacuumTriggered);
@@ -369,6 +373,7 @@ void menuWidget::retranslateMenus()
     m_commLogAction->setText(LANGUAGE("LG_menu_action_commLog"));
     m_alarmHistoryAction->setText(LANGUAGE("LG_menu_action_alarmHistory"));
     m_databaseBackupAction->setText(LANGUAGE("LG_menu_action_dbBackup"));
+    m_databaseRestoreAction->setText(LANGUAGE("LG_menu_action_dbRestore"));
     m_databaseVacuumAction->setText(LANGUAGE("LG_menu_action_dbVacuum"));
     m_curveScreenshotAction->setText(LANGUAGE("LG_menu_action_curveScreenshot"));
     m_curveExportAction->setText(LANGUAGE("LG_menu_action_curveExport"));

@@ -6,6 +6,7 @@
 #include <QDateTime>
 #include <QEvent>
 #include <QBoxLayout>
+#include <QCheckBox>
 #include <QFile>
 #include <QLabel>
 #include <QLayout>
@@ -55,6 +56,10 @@ RealCurveWidget::RealCurveWidget(QWidget *parent)
     connect(ui->pushButtonPause, &QPushButton::clicked,
             this, &RealCurveWidget::onPushButtonPauseClicked);
 
+    // 自动跟随勾选框：勾选时视窗随采集滚动，取消后保持手动缩放结果
+    connect(ui->checkBoxAutoFollow, &QCheckBox::toggled,
+            this, &RealCurveWidget::onAutoFollowToggled);
+
     languageChange();
 
     // 时间范围切换到具体秒数后立即生效
@@ -73,6 +78,9 @@ void RealCurveWidget::languageChange()
     ui->labelSubtitle->setText(LANGUAGE("LG_curve_desc"));
 
     updatePauseButtonText();
+
+    ui->checkBoxAutoFollow->setText(LANGUAGE("LG_curve_autoFollow"));
+    ui->checkBoxAutoFollow->setToolTip(LANGUAGE("LG_curve_autoFollowTip"));
 
     ui->labelLegendTemp->setText(LANGUAGE("LG_curve_legend_temp"));
     ui->labelLegendPress->setText(LANGUAGE("LG_curve_legend_press"));
@@ -473,11 +481,11 @@ void RealCurveWidget::onChannelValueChanged(int index, double value)
         return;
     }
 
-    // 自动跟随时横轴滚动到 [now-window, now]
+    // 自动跟随时横轴按当前显示跨度滚动到 [now-span, now]，保留用户的缩放比例
     if (m_followLatest) {
         m_updatingXRange = true;
         ui->chartView->axisRect()->axis(QCPAxis::atBottom)->setRange(
-            nowSecs - m_timeWindowSeconds, nowSecs);
+            nowSecs - m_viewSpanSeconds, nowSecs);
         m_updatingXRange = false;
     }
 
@@ -506,7 +514,9 @@ void RealCurveWidget::setTimeWindowSeconds(int seconds)
         return;
     }
 
+    // 切换保留时长视为显式调整窗口：显示跨度同步为该时长并恢复自动跟随
     m_timeWindowSeconds = static_cast<double>(clamped);
+    m_viewSpanSeconds = m_timeWindowSeconds;
 
     // 缩短窗口时立即裁剪；放大窗口无法恢复已删除的旧点，只能等新数据填充
     const double nowSecs = elapsedSeconds();
@@ -520,6 +530,7 @@ void RealCurveWidget::setTimeWindowSeconds(int seconds)
 
     // 切换保留时长视为显式调整窗口：恢复自动跟随最新
     m_followLatest = true;
+    syncAutoFollowCheckBox();
 
     // 尚无真实数据时保持演示曲线按 [0, window] 显示
     const double rangeStart = m_hasRealData ? nowSecs - m_timeWindowSeconds : 0.0;
@@ -630,29 +641,75 @@ void RealCurveWidget::onTimeRangeChanged(int index)
 
 void RealCurveWidget::onAxisXRangeChanged(const QCPRange &newRange)
 {
-    Q_UNUSED(newRange);
-
     // 程序内滚动视窗不算用户操作；用户滚轮缩放/拖动后停止自动跟随
     if (m_updatingXRange) {
         return;
     }
+
     m_followLatest = false;
+
+    // 记录用户缩放后的跨度（最小 5 秒，最大不超过保留时长），实现自由缩放比例
+    const double span = qBound(kMinViewSpanSeconds, newRange.size(), m_timeWindowSeconds);
+    m_viewSpanSeconds = span;
+
+    // 缩放超出保留时长时收敛到上限，避免出现无数据的空白区
+    if (!qFuzzyCompare(newRange.size(), span)) {
+        const double center = newRange.center();
+        m_updatingXRange = true;
+        ui->chartView->axisRect()->axis(QCPAxis::atBottom)->setRange(
+            center - span / 2.0, center + span / 2.0);
+        m_updatingXRange = false;
+    }
+
+    refreshAxisTicker();
+    syncAutoFollowCheckBox();
 }
 
 void RealCurveWidget::onPlotDoubleClicked(QMouseEvent *event)
 {
     Q_UNUSED(event);
 
-    // 双击图表恢复自动跟随，并立即回到最新窗口
+    // 双击图表：复位到保留时长并恢复自动跟随
     m_followLatest = true;
+    m_viewSpanSeconds = m_timeWindowSeconds;
+    refreshAxisTicker();
+    syncAutoFollowCheckBox();
+    scrollToLatest();
 
+    ui->chartView->replot();
+}
+
+void RealCurveWidget::onAutoFollowToggled(bool checked)
+{
+    m_followLatest = checked;
+    if (!checked) {
+        // 取消跟随：保持用户当前的缩放/拖动结果
+        return;
+    }
+
+    // 重新勾选：立即滚动到最新窗口并刷新
+    scrollToLatest();
+    if (!m_paused) {
+        m_replotPending = false;
+        ui->chartView->replot();
+    }
+}
+
+void RealCurveWidget::syncAutoFollowCheckBox()
+{
+    const QSignalBlocker blocker(ui->checkBoxAutoFollow);
+    ui->checkBoxAutoFollow->setChecked(m_followLatest);
+}
+
+void RealCurveWidget::scrollToLatest()
+{
     const double nowSecs = elapsedSeconds();
     m_updatingXRange = true;
     ui->chartView->axisRect()->axis(QCPAxis::atBottom)->setRange(
-        nowSecs - m_timeWindowSeconds, nowSecs);
+        nowSecs - m_viewSpanSeconds, nowSecs);
     m_updatingXRange = false;
 
-    ui->chartView->replot();
+    refreshLimitLine();
 }
 
 void RealCurveWidget::syncTimeRangeCombo()
@@ -668,7 +725,7 @@ void RealCurveWidget::refreshAxisTicker()
 {
     QCPAxis *axisX = ui->chartView->axisRect()->axis(QCPAxis::atBottom);
     QSharedPointer<QCPAxisTickerTime> tickerX(new QCPAxisTickerTime);
-    if (m_timeWindowSeconds >= 3600.0) {
+    if (m_viewSpanSeconds >= 3600.0) {
         // 小时级窗口用 时:分，避免 %m:%s 在超过 1 小时后刻度含义失真
         tickerX->setTimeFormat(QStringLiteral("%h:%m"));
     } else {
@@ -690,13 +747,9 @@ void RealCurveWidget::setPaused(bool paused)
 
     // 恢复时补一次重绘，把冻结期间累积的数据画出来
     if (!m_paused) {
-        // 自动跟随时把视窗拉回最新，避免冻结期间的旧视窗
+        // 自动跟随时把视窗拉回最新，沿用当前缩放跨度
         if (m_followLatest) {
-            const double nowSecs = elapsedSeconds();
-            m_updatingXRange = true;
-            ui->chartView->axisRect()->axis(QCPAxis::atBottom)->setRange(
-                nowSecs - m_timeWindowSeconds, nowSecs);
-            m_updatingXRange = false;
+            scrollToLatest();
         }
         m_replotPending = false;
         ui->chartView->replot();

@@ -2,6 +2,7 @@
 #define WRITEREGISTERDIALOG_H
 
 #include "channelmodel.h"
+#include "modbusrtu.h"
 
 #include <QDialog>
 #include <QVector>
@@ -23,6 +24,11 @@ public:
     explicit WriteRegisterDialog(const ChannelModel *channelModel, QWidget *parent = nullptr);
     ~WriteRegisterDialog() override;
 
+public slots:
+    // 写操作结果（由 SerialWorker 跨线程回传）：成功关闭对话框，失败保留以便重试
+    void onWriteSucceeded(quint8 functionCode, quint16 startAddress, quint16 quantity);
+    void onWriteFailed(ModbusError error, const QString &message);
+
 signals:
     // 06 / 16：从站 + 起始地址 + 寄存器值列表
     void writeRegistersRequested(quint8 slaveId, quint16 address, const QVector<quint16> &values);
@@ -42,6 +48,8 @@ private:
     // 校验写保护、连接状态与输入，通过后发出对应信号
     void submitWrite();
     bool confirmWrite(quint16 quantity);
+    // 写入进行中禁用输入控件，避免重复提交或中途改值
+    void setWriteInFlight(bool inFlight);
 
 private slots:
     void onModeChanged(int index);
@@ -49,6 +57,7 @@ private slots:
 
 private:
     const ChannelModel *m_channelModel = nullptr;
+    bool m_writeInFlight = false;
 
     QCheckBox *m_protectCheck = nullptr;
     QComboBox *m_modeCombo = nullptr;

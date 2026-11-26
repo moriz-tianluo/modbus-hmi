@@ -90,6 +90,8 @@ public slots:
     void vacuumDatabase();
     // 备份数据库到 targetPath（VACUUM INTO，目标文件存在时会先删除）
     void backupDatabase(const QString &targetPath);
+    // 用 sourcePath 覆盖当前数据库（关闭连接 → 替换文件 → 重新打开）
+    void restoreDatabase(const QString &sourcePath);
     // 当前数据库文件大小（字节），通过 databaseSizeReady 回传
     void queryDatabaseSize();
 
@@ -119,6 +121,8 @@ signals:
     void databaseSizeReady(qint64 bytes);
 
 private:
+    // 打开/创建数据库（不发信号），供 openDatabase 与 restoreDatabase 复用
+    bool open(const QString &filePath, QString *errorString);
     // 建表 + 建索引 + 设置 WAL
     bool createTables(QString *errorString);
     // 按 PRAGMA user_version 升级表结构（索引补充、alarm.acknowledged 列）
@@ -133,6 +137,7 @@ private:
 
     QSqlDatabase m_db;
     QString m_connectionName;
+    QString m_dbPath;  // 当前数据库文件路径，恢复时用作被替换目标
     bool m_opened = false;
 
     QVector<SampleChannelData> m_buffer;  // 待写入的采样行

@@ -261,6 +261,19 @@
       </spacer>
      </item>
      <item>
+      <widget class="QCheckBox" name="checkBoxAutoFollow">
+       <property name="cursor">
+        <cursorShape>PointingHandCursor</cursorShape>
+       </property>
+       <property name="text">
+        <string/>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QComboBox" name="comboBoxTimeRange">
        <property name="minimumSize">
         <size>

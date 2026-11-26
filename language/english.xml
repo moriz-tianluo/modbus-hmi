@@ -111,6 +111,8 @@
     <data key="LG_curve_range_1hour" value="1 hour"/>
     <data key="LG_curve_range_4hour" value="4 hours"/>
     <data key="LG_curve_rangeTip" value="Curve retention window"/>
+    <data key="LG_curve_autoFollow" value="Auto Follow"/>
+    <data key="LG_curve_autoFollowTip" value="Keep the curve window scrolling to the latest data; unchecks automatically after manual zoom or drag"/>
     <data key="LG_curve_upperLimit" value="Upper limit %1%"/>
     <data key="LG_curve_settingsTitle" value="Curve Settings"/>
     <data key="LG_curve_lineWidth" value="Line Width"/>
@@ -183,6 +185,7 @@
     <data key="LG_alarm_exportFailFmt" value="Export failed: %1"/>
     <data key="LG_menu_action_alarmHistory" value="Alarm History…"/>
     <data key="LG_menu_action_dbBackup" value="Backup Database…"/>
+    <data key="LG_menu_action_dbRestore" value="Restore Database…"/>
     <data key="LG_menu_action_dbVacuum" value="Vacuum Database"/>
     <data key="LG_menu_action_curveScreenshot" value="Curve Screenshot…"/>
     <data key="LG_menu_action_curveExport" value="Export Curve Data…"/>
@@ -196,6 +199,11 @@
     <data key="LG_db_backup_filter" value="SQLite Database (*.db)"/>
     <data key="LG_db_backup_done" value="Database backup completed"/>
     <data key="LG_db_backup_failFmt" value="Backup failed: %1"/>
+    <data key="LG_db_restore_title" value="Restore Database"/>
+    <data key="LG_db_restore_filter" value="SQLite Database (*.db)"/>
+    <data key="LG_db_restore_done" value="Database restored"/>
+    <data key="LG_db_restore_failFmt" value="Restore failed: %1"/>
+    <data key="LG_db_restore_confirmText" value="Restore will overwrite the current database. Continue?"/>
     <data key="LG_db_vacuum_done" value="Database vacuum completed"/>
     <data key="LG_db_vacuum_failFmt" value="Database vacuum failed: %1"/>
     <data key="LG_alarm_msg_reconnecting" value="Serial disconnected, reconnecting (attempt %1)"/>

@@ -63,6 +63,7 @@ signals:
     // 报警记录 / 数据库维护
     void alarmHistoryTriggered();
     void databaseBackupTriggered();
+    void databaseRestoreTriggered();
     void databaseVacuumTriggered();
     // 曲线导出
     void curveScreenshotTriggered();
@@ -137,6 +138,7 @@ private:
     QAction *m_writeRegisterAction = nullptr;
     QAction *m_alarmHistoryAction = nullptr;
     QAction *m_databaseBackupAction = nullptr;
+    QAction *m_databaseRestoreAction = nullptr;
     QAction *m_databaseVacuumAction = nullptr;
     QAction *m_curveScreenshotAction = nullptr;
     QAction *m_curveExportAction = nullptr;

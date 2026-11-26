@@ -16,7 +16,7 @@ SaveDataSQL::SaveDataSQL(QObject *parent)
     // 跨线程队列连接需要注册自定义类型
     qRegisterMetaType<SampleChannelData>("SampleChannelData");
     qRegisterMetaType<QVector<SampleChannelData>>("QVector<SampleChannelData>");
-    qRegisterMetaType<AlarmDbRecord>("AlarmRecord");
+    qRegisterMetaType<AlarmDbRecord>("AlarmDbRecord");
     qRegisterMetaType<QVector<AlarmDbRecord>>("QVector<AlarmDbRecord>");
 }
 
@@ -25,7 +25,7 @@ SaveDataSQL::~SaveDataSQL()
     closeDatabase();
 }
 
-void SaveDataSQL::openDatabase(const QString &filePath)
+bool SaveDataSQL::open(const QString &filePath, QString *errorString)
 {
     // 先释放已有连接，避免重复打开
     closeDatabase();
@@ -41,11 +41,13 @@ void SaveDataSQL::openDatabase(const QString &filePath)
     m_db.setDatabaseName(filePath);
 
     if (!m_db.open()) {
-        const QString error = m_db.lastError().text();
+        if (errorString != nullptr) {
+            *errorString = m_db.lastError().text();
+        }
         m_db = QSqlDatabase();
         QSqlDatabase::removeDatabase(m_connectionName);
-        emit databaseOpened(false, error);
-        return;
+        m_connectionName.clear();
+        return false;
     }
 
     // WAL + NORMAL：批量写入更快，掉电最多丢失最后一个事务
@@ -53,14 +55,20 @@ void SaveDataSQL::openDatabase(const QString &filePath)
     pragma.exec(QStringLiteral("PRAGMA journal_mode=WAL"));
     pragma.exec(QStringLiteral("PRAGMA synchronous=NORMAL"));
 
-    QString error;
-    if (!createTables(&error)) {
-        emit databaseOpened(false, error);
-        return;
+    if (!createTables(errorString)) {
+        return false;
     }
 
+    m_dbPath = filePath;
     m_opened = true;
-    emit databaseOpened(true, QString());
+    return true;
+}
+
+void SaveDataSQL::openDatabase(const QString &filePath)
+{
+    QString error;
+    const bool ok = open(filePath, &error);
+    emit databaseOpened(ok, error);
 }
 
 void SaveDataSQL::closeDatabase()
@@ -602,6 +610,54 @@ void SaveDataSQL::backupDatabase(const QString &targetPath)
         return;
     }
     emit maintenanceFinished(true, QStringLiteral("backup"), QString());
+}
+
+void SaveDataSQL::restoreDatabase(const QString &sourcePath)
+{
+    if (m_dbPath.isEmpty()) {
+        emit maintenanceFinished(false, QStringLiteral("restore"), QString());
+        return;
+    }
+    if (!QFile::exists(sourcePath)) {
+        emit maintenanceFinished(false, QStringLiteral("restore"),
+                                 QStringLiteral("source file not found"));
+        return;
+    }
+    if (QFileInfo(sourcePath).absoluteFilePath()
+        == QFileInfo(m_dbPath).absoluteFilePath()) {
+        emit maintenanceFinished(false, QStringLiteral("restore"),
+                                 QStringLiteral("source is the current database"));
+        return;
+    }
+
+    // 关闭当前连接（含 flush 落盘），才能安全替换数据库文件
+    closeDatabase();
+
+    // 删除当前库及其 WAL / SHM，避免旧日志干扰恢复后的库
+    const QStringList suffixes = {QString(), QStringLiteral("-wal"),
+                                  QStringLiteral("-shm")};
+    for (const QString &suffix : suffixes) {
+        const QString target = m_dbPath + suffix;
+        if (QFile::exists(target) && !QFile::remove(target)) {
+            emit maintenanceFinished(false, QStringLiteral("restore"),
+                                     QStringLiteral("cannot remove %1").arg(target));
+            return;
+        }
+    }
+
+    ensureDirectory(m_dbPath);
+    if (!QFile::copy(sourcePath, m_dbPath)) {
+        emit maintenanceFinished(false, QStringLiteral("restore"),
+                                 QStringLiteral("cannot copy source file"));
+        return;
+    }
+
+    QString error;
+    if (!open(m_dbPath, &error)) {
+        emit maintenanceFinished(false, QStringLiteral("restore"), error);
+        return;
+    }
+    emit maintenanceFinished(true, QStringLiteral("restore"), QString());
 }
 
 void SaveDataSQL::queryDatabaseSize()

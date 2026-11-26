@@ -214,7 +214,7 @@ void WriteRegisterDialog::submitWrite()
             return;
         }
         emit writeRegistersRequested(slaveId, address, values);
-        accept();
+        setWriteInFlight(true);
         return;
     }
 
@@ -228,7 +228,7 @@ void WriteRegisterDialog::submitWrite()
             return;
         }
         emit writeSingleCoilRequested(slaveId, address, coils.first());
-        accept();
+        setWriteInFlight(true);
         return;
     }
 
@@ -236,5 +236,40 @@ void WriteRegisterDialog::submitWrite()
         return;
     }
     emit writeCoilsRequested(slaveId, address, coils);
+    setWriteInFlight(true);
+}
+
+void WriteRegisterDialog::setWriteInFlight(bool inFlight)
+{
+    m_writeInFlight = inFlight;
+    m_writeButton->setEnabled(!inFlight && m_protectCheck->isChecked());
+    m_modeCombo->setEnabled(!inFlight);
+    m_slaveSpin->setEnabled(!inFlight);
+    m_addressSpin->setEnabled(!inFlight);
+    m_quantitySpin->setEnabled(!inFlight);
+    m_valueEdit->setEnabled(!inFlight);
+    m_protectCheck->setEnabled(!inFlight);
+}
+
+void WriteRegisterDialog::onWriteSucceeded(quint8 functionCode, quint16 startAddress,
+                                           quint16 quantity)
+{
+    Q_UNUSED(functionCode)
+    Q_UNUSED(startAddress)
+    Q_UNUSED(quantity)
+
+    // 成功：关闭对话框；状态栏提示由 MainWidget 统一处理
+    m_writeInFlight = false;
     accept();
+}
+
+void WriteRegisterDialog::onWriteFailed(ModbusError error, const QString &message)
+{
+    Q_UNUSED(error)
+
+    // 失败：保持对话框打开，恢复输入并提示，便于就地重试
+    m_writeInFlight = false;
+    setWriteInFlight(false);
+    QMessageBox::warning(this, LANGUAGE("LG_write_title"),
+                         LANGUAGE("LG_write_failedFmt").arg(message));
 }

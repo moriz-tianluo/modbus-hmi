@@ -50,3 +50,16 @@ foreach(test_name IN LISTS HMI_TEST_NAMES)
     target_link_libraries(${test_name} PRIVATE hmi_test_core Qt6::Test)
     add_test(NAME ${test_name} COMMAND ${test_name})
 endforeach()
+
+# 可选：Python 协议级测试（模拟从站，无需串口硬件与 com0com）
+# 未安装 Python3 时自动跳过，不影响 C++ 测试
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+    add_test(NAME python_slave_sim
+             COMMAND ${Python3_EXECUTABLE} -m unittest discover -s . -p "test_*.py" -v
+             WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python)
+    set_tests_properties(python_slave_sim PROPERTIES
+        ENVIRONMENT "PYTHONIOENCODING=utf-8")
+else()
+    message(STATUS "Python3 not found, python_slave_sim test skipped")
+endif()

@@ -23,6 +23,7 @@ private slots:
     void purgeRemovesOldRows();
     void alarmQueryAcknowledgeExport();
     void backupAndVacuum();
+    void restoreOverwritesCurrent();
 
 private:
     static QVector<SampleChannelData> makeRound(qint64 timestampMs, int channelCount);
@@ -229,6 +230,40 @@ void TestSaveDataSql::backupAndVacuum()
         QVERIFY(vacuumSpy.wait(5000));
     }
     QVERIFY(vacuumSpy.at(0).at(0).toBool());
+}
+
+void TestSaveDataSql::restoreOverwritesCurrent()
+{
+    // 初始 2 条 → 备份 → 再写 2 条使当前库为 4 条 → 恢复备份 → 应回到 2 条
+    m_database->enqueueSample(1000, makeRound(1000, 2));
+    m_database->flush();
+
+    const QString backupPath = m_tempDir->filePath(QStringLiteral("backup.db"));
+    QSignalSpy backupSpy(m_database, &SaveDataSQL::maintenanceFinished);
+    m_database->backupDatabase(backupPath);
+    if (backupSpy.isEmpty()) {
+        QVERIFY(backupSpy.wait(5000));
+    }
+    QVERIFY(backupSpy.at(0).at(0).toBool());
+
+    m_database->enqueueSample(2000, makeRound(2000, 2));
+    m_database->flush();
+
+    QSignalSpy restoreSpy(m_database, &SaveDataSQL::maintenanceFinished);
+    m_database->restoreDatabase(backupPath);
+    if (restoreSpy.isEmpty()) {
+        QVERIFY(restoreSpy.wait(5000));
+    }
+    QCOMPARE(restoreSpy.count(), 1);
+    QVERIFY(restoreSpy.at(0).at(0).toBool());
+    QCOMPARE(restoreSpy.at(0).at(1).toString(), QStringLiteral("restore"));
+
+    QSignalSpy countSpy(m_database, &SaveDataSQL::recordCountReady);
+    m_database->queryRecordCount(0, 5000);
+    if (countSpy.isEmpty()) {
+        QVERIFY(countSpy.wait(3000));
+    }
+    QCOMPARE(countSpy.at(0).at(2).toLongLong(), static_cast<qint64>(2));
 }
 
 QTEST_GUILESS_MAIN(TestSaveDataSql)

@@ -84,6 +84,8 @@ private slots:
     void onAxisXRangeChanged(const QCPRange &newRange);
     // 双击图表：恢复自动跟随最新数据
     void onPlotDoubleClicked(QMouseEvent *event);
+    // 「自动跟随」勾选框：勾选后视窗随采集滚动，取消后保持当前视窗
+    void onAutoFollowToggled(bool checked);
     // 鼠标移动：十字光标读数
     void onPlotMouseMove(QMouseEvent *event);
 
@@ -106,6 +108,10 @@ private:
     void demoSineData();
     // 按 m_paused 刷新暂停按钮文字
     void updatePauseButtonText();
+    // 让「自动跟随」勾选框与 m_followLatest 保持一致（不触发 toggled）
+    void syncAutoFollowCheckBox();
+    // 把横轴立即滚动到最新窗口 [now-window, now]
+    void scrollToLatest();
     // 按通道模型刷新图例文字、颜色与可见性
     void refreshLegend();
     // 按启用状态/高亮状态刷新 4 条曲线画笔
@@ -141,6 +147,7 @@ private:
     // 横轴显示的时间窗口（秒），运行期可调；超过此值的旧点在 append 时被移除
     static constexpr int kMinTimeWindowSeconds = 30;     // 最短 30 秒
     static constexpr int kMaxTimeWindowSeconds = 14400;  // 最长 4 小时
+    static constexpr double kMinViewSpanSeconds = 5.0;   // 自由缩放的最小显示跨度
 
     // 相对时间基准：横轴使用“自控件创建起经过的秒数”，供 QCPAxisTickerTime 生成刻度
     QElapsedTimer m_elapsed;
@@ -152,8 +159,9 @@ private:
     bool m_paused = false;                   // 曲线是否处于冻结重绘状态
     int m_highlightedIndex = -1;             // 高亮通道索引，-1 表示无高亮
     double m_timeWindowSeconds = 300.0;      // 曲线保留时长（秒），默认 5 分钟
+    double m_viewSpanSeconds = 300.0;        // 横轴当前显示跨度（自由缩放），不超过保留时长
     bool m_replotPending = false;            // 本轮有数据待重绘（由 endRoundUpdate 消费）
-    bool m_followLatest = true;              // 横轴是否自动滚动到最新时刻
+    bool m_followLatest = true;              // 横轴是否自动滚动到最新时刻（与勾选框同步）
     bool m_updatingXRange = false;           // 程序内设置横轴范围期间屏蔽“用户缩放”判定
 
     int m_lineWidth = 2;                     // 曲线线宽（像素）

@@ -245,6 +245,9 @@ void MainWidget::initChannelConnections()
             ui->realDataWidget, &RealDataWidget::onChannelEnabledChanged);
     connect(m_channelModel, &ChannelModel::channelEnabledChanged,
             ui->realCurveWidget, &RealCurveWidget::onChannelEnabledChanged);
+    // 通道启停也会改变轮询任务集合，采集中同样需要重建
+    connect(m_channelModel, &ChannelModel::channelEnabledChanged,
+            this, &MainWidget::onChannelListChanged);
     // 通道增删改 → 重置报警越限计数，避免旧状态错位
     connect(m_channelModel, &ChannelModel::channelsChanged,
             this, &MainWidget::onChannelListChanged);
@@ -525,6 +528,8 @@ void MainWidget::initMenuConnections()
             this, &MainWidget::onAlarmHistoryTriggered);
     connect(ui->MenuWidget, &menuWidget::databaseBackupTriggered,
             this, &MainWidget::onDatabaseBackupTriggered);
+    connect(ui->MenuWidget, &menuWidget::databaseRestoreTriggered,
+            this, &MainWidget::onDatabaseRestoreTriggered);
     connect(ui->MenuWidget, &menuWidget::databaseVacuumTriggered,
             this, &MainWidget::onDatabaseVacuumTriggered);
     connect(ui->MenuWidget, &menuWidget::curveScreenshotTriggered,
@@ -590,39 +595,43 @@ void MainWidget::onClosePortRequested()
 
 void MainWidget::onStartCollectRequested()
 {
+    // 新一轮采集：统计清零，并下发串口超时/重试参数（仅启动时下发一次）
+    ui->collectionStatisticsWidget->resetStatistics();
+    QMetaObject::invokeMethod(m_worker, "applyCommunicationOptions", Qt::QueuedConnection,
+                              Q_ARG(int, ui->comSetWidget->currentResponseTimeoutMs()),
+                              Q_ARG(int, ui->comSetWidget->currentRetryCount()));
+
+    applyCurrentPollingTasks();
+}
+
+void MainWidget::applyCurrentPollingTasks()
+{
     // 前置校验：同一从站内地址不能重复（地址断档已支持，会自动拆成多段轮询）
     QString errorMsg;
     if (!m_channelModel->validateAddressContinuity(&errorMsg)) {
         ui->OperationWidget->setStatusText(errorMsg);
+        // 采集中改配置导致校验失败：停止采集，避免旧任务与新配置不一致
+        if (m_polling) {
+            QMetaObject::invokeMethod(m_worker, "stopPolling", Qt::QueuedConnection);
+        }
         return;
     }
 
-    // 汇总 Modbus 参数（全部从 modbusSetWidget 一站式读取）
-    const quint8 slaveId = ui->modbusSetWidget->currentSlaveId();
     const ModbusFunctionCode funcCode = ui->modbusSetWidget->currentFunctionCode();
-    const quint16 startAddr = ui->modbusSetWidget->currentStartAddress();
-    const quint16 quantity = ui->modbusSetWidget->currentQuantity();
     const int intervalMs = ui->modbusSetWidget->currentIntervalMs();
 
     // 按通道配置生成多从站 / 多段轮询任务；无通道时回退到设置卡片的单段配置
     QVector<PollTask> tasks = m_channelModel->buildPollTasks(funcCode);
     if (tasks.isEmpty()) {
         PollTask manualTask;
-        manualTask.slaveId = slaveId;
+        manualTask.slaveId = ui->modbusSetWidget->currentSlaveId();
         manualTask.functionCode = funcCode;
-        manualTask.startAddress = startAddr;
-        manualTask.quantity = quantity;
+        manualTask.startAddress = ui->modbusSetWidget->currentStartAddress();
+        manualTask.quantity = ui->modbusSetWidget->currentQuantity();
         tasks.append(manualTask);
     }
 
-    // 新一轮采集：统计清零
-    ui->collectionStatisticsWidget->resetStatistics();
-
-    // 串口卡片的超时/重试随本次启动下发，后者排队执行在 startPollingTasks 之前
-    QMetaObject::invokeMethod(m_worker, "applyCommunicationOptions", Qt::QueuedConnection,
-                              Q_ARG(int, ui->comSetWidget->currentResponseTimeoutMs()),
-                              Q_ARG(int, ui->comSetWidget->currentRetryCount()));
-
+    // 采集中调用会更新任务列表并从当前位置继续；未采集时由 poller 从头开始
     QMetaObject::invokeMethod(m_worker, "startPollingTasks", Qt::QueuedConnection,
                               Q_ARG(QVector<PollTask>, tasks),
                               Q_ARG(int, intervalMs));
@@ -862,6 +871,11 @@ void MainWidget::onWriteRegisterTriggered()
             this, &MainWidget::onWriteSingleCoilRequested);
     connect(&dialog, &WriteRegisterDialog::writeCoilsRequested,
             this, &MainWidget::onWriteCoilsRequested);
+    // 写操作异步回传：对话框按结果决定关闭（成功）或保留重试（失败）
+    connect(m_worker, &SerialWorker::writeSucceeded,
+            &dialog, &WriteRegisterDialog::onWriteSucceeded);
+    connect(m_worker, &SerialWorker::writeFailed,
+            &dialog, &WriteRegisterDialog::onWriteFailed);
     dialog.exec();
 }
 
@@ -947,6 +961,27 @@ void MainWidget::onDatabaseBackupTriggered()
                               Q_ARG(QString, path));
 }
 
+void MainWidget::onDatabaseRestoreTriggered()
+{
+    // 恢复会覆盖当前数据库，先二次确认
+    if (QMessageBox::question(this, LANGUAGE("LG_db_restore_title"),
+                              LANGUAGE("LG_db_restore_confirmText"),
+                              QMessageBox::Yes | QMessageBox::No,
+                              QMessageBox::No) != QMessageBox::Yes) {
+        return;
+    }
+
+    const QString path = QFileDialog::getOpenFileName(
+        this, LANGUAGE("LG_db_restore_title"), QString(),
+        LANGUAGE("LG_db_restore_filter"));
+    if (path.isEmpty()) {
+        return;
+    }
+
+    QMetaObject::invokeMethod(m_saveData, "restoreDatabase", Qt::QueuedConnection,
+                              Q_ARG(QString, path));
+}
+
 void MainWidget::onDatabaseVacuumTriggered()
 {
     QMetaObject::invokeMethod(m_saveData, "vacuumDatabase", Qt::QueuedConnection);
@@ -1008,6 +1043,19 @@ void MainWidget::onDatabaseMaintenanceFinished(bool ok, const QString &action,
         return;
     }
 
+    if (action == QStringLiteral("restore")) {
+        if (ok) {
+            ui->OperationWidget->setStatusText(LANGUAGE("LG_db_restore_done"));
+        } else {
+            QMessageBox::warning(this, LANGUAGE("LG_db_restore_title"),
+                                 LANGUAGE("LG_db_restore_failFmt")
+                                     .arg(errorString.isEmpty()
+                                              ? LANGUAGE("LG_store_err_dbNotReady")
+                                              : errorString));
+        }
+        return;
+    }
+
     if (!ok && !errorString.isEmpty()) {
         QMessageBox::warning(this, LANGUAGE("LG_card_dataStore"),
                              LANGUAGE("LG_db_vacuum_failFmt").arg(errorString));
@@ -1040,6 +1088,11 @@ void MainWidget::onChannelListChanged()
 {
     // 通道增删改后下标可能错位，直接丢弃全部越限状态
     m_alarmStates.clear();
+
+    // 采集运行中：用新通道配置重建轮询任务（启停/增删改/从站变更均即时生效）
+    if (m_polling) {
+        applyCurrentPollingTasks();
+    }
 }
 
 // ============== 工程文件 ==============

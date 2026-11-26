@@ -106,6 +106,7 @@ private slots:
     // 报警记录 / 数据库维护
     void onAlarmHistoryTriggered();
     void onDatabaseBackupTriggered();
+    void onDatabaseRestoreTriggered();
     void onDatabaseVacuumTriggered();
     void onDatabaseMaintenanceFinished(bool ok, const QString &action,
                                        const QString &errorString);
@@ -177,6 +178,8 @@ private:
     void saveScreenshot();
     // 按当前连接/采集状态刷新菜单动作可用性
     void refreshActionStates();
+    // 用当前界面参数重建轮询任务并下发给 worker（启动采集 / 采集中配置变更共用）
+    void applyCurrentPollingTasks();
 
     // ---- 界面语言 ----
     // 应用语言：languageType -1 跟随系统 / 0 中文 / 1 英文；persist=true 时写入配置
