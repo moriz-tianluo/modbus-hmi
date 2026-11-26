@@ -8,6 +8,7 @@
 #include <QVector>
 
 class QCheckBox;
+class QCloseEvent;
 class QComboBox;
 class QLabel;
 class QLineEdit;
@@ -28,6 +29,8 @@ public slots:
     // 写操作结果（由 SerialWorker 跨线程回传）：成功关闭对话框，失败保留以便重试
     void onWriteSucceeded(quint8 functionCode, quint16 startAddress, quint16 quantity);
     void onWriteFailed(ModbusError error, const QString &message);
+    // 写入进行中禁止取消 / Esc 关闭，避免结果丢失
+    void reject() override;
 
 signals:
     // 06 / 16：从站 + 起始地址 + 寄存器值列表
@@ -36,6 +39,10 @@ signals:
     void writeSingleCoilRequested(quint8 slaveId, quint16 address, bool on);
     // 15：多个线圈
     void writeCoilsRequested(quint8 slaveId, quint16 address, const QVector<bool> &values);
+
+protected:
+    // 写入进行中拦截窗口关闭（标题栏 X / Alt+F4）
+    void closeEvent(QCloseEvent *event) override;
 
 private:
     void initUi();
@@ -50,10 +57,14 @@ private:
     bool confirmWrite(quint16 quantity);
     // 写入进行中禁用输入控件，避免重复提交或中途改值
     void setWriteInFlight(bool inFlight);
+    // 多值模式下让「数量」与值列表个数一致，避免数量输入与下发内容不符
+    void syncQuantityFromValues();
 
 private slots:
     void onModeChanged(int index);
     void onProtectToggled(bool checked);
+    // 值列表变化时，多寄存器 / 多线圈模式的「数量」跟随实际个数
+    void onValueTextChanged(const QString &text);
 
 private:
     const ChannelModel *m_channelModel = nullptr;

@@ -19,6 +19,9 @@ private slots:
     void jsonRoundTrip();
     void jsonAcceptsGapAndSlave();
     void buildPollTasksSegments();
+    void buildPollTasksSplitsByFunctionCode();
+    void sameAddressDifferentFunctionAllowed();
+    void channelIndexesInRangeByFunction();
     void updateRawValuesSkipsDisabled();
 
 private:
@@ -164,7 +167,7 @@ void TestChannelModel::buildPollTasksSegments()
     ChannelModel model;
     model.setChannels({first, second, third, otherSlave, disabled});
 
-    const QVector<PollTask> tasks = model.buildPollTasks(ModbusFunctionCode::ReadHoldingRegisters);
+    const QVector<PollTask> tasks = model.buildPollTasks();
     // 从站 1 地址 0~1、5 各一段；从站 2 地址 0 一段
     QCOMPARE(tasks.size(), 3);
     QCOMPARE(tasks.at(0).slaveId, static_cast<quint8>(1));
@@ -174,6 +177,83 @@ void TestChannelModel::buildPollTasksSegments()
     QCOMPARE(tasks.at(1).startAddress, static_cast<quint16>(5));
     QCOMPARE(tasks.at(1).quantity, static_cast<quint16>(1));
     QCOMPARE(tasks.at(2).slaveId, static_cast<quint8>(2));
+}
+
+void TestChannelModel::buildPollTasksSplitsByFunctionCode()
+{
+    ChannelItem holding = makeChannel(0);
+    ChannelItem input = makeChannel(0);
+    input.functionCode = ModbusFunctionCode::ReadInputRegisters;
+
+    ChannelModel model;
+    model.setChannels({holding, input});
+
+    // 同从站同地址但功能码不同：必须拆成两个任务，不能合并成一次读取
+    const QVector<PollTask> tasks = model.buildPollTasks();
+    QCOMPARE(tasks.size(), 2);
+    QCOMPARE(tasks.at(0).functionCode, ModbusFunctionCode::ReadHoldingRegisters);
+    QCOMPARE(tasks.at(1).functionCode, ModbusFunctionCode::ReadInputRegisters);
+    QCOMPARE(tasks.at(0).startAddress, static_cast<quint16>(0));
+    QCOMPARE(tasks.at(1).startAddress, static_cast<quint16>(0));
+    QCOMPARE(tasks.at(0).quantity, static_cast<quint16>(1));
+    QCOMPARE(tasks.at(1).quantity, static_cast<quint16>(1));
+
+    // JSON 往返保留每通道功能码
+    QString error;
+    ChannelModel restored;
+    QVERIFY(restored.fromJsonBytes(model.toJsonBytes(), &error));
+    QCOMPARE(restored.channelAt(1).functionCode, ModbusFunctionCode::ReadInputRegisters);
+}
+
+void TestChannelModel::sameAddressDifferentFunctionAllowed()
+{
+    ChannelItem holding = makeChannel(0);
+    ChannelItem input = makeChannel(0);
+    input.functionCode = ModbusFunctionCode::ReadInputRegisters;
+
+    ChannelModel model;
+    model.setChannels({holding, input});
+
+    // 03 数据只回填 03 通道
+    model.updateRawValues(1, ModbusFunctionCode::ReadHoldingRegisters, 0, {111});
+    QCOMPARE(model.channelAt(0).rawValue, static_cast<quint16>(111));
+    QCOMPARE(model.channelAt(1).rawValue, static_cast<quint16>(0));
+
+    // 04 数据只回填 04 通道，互不串值
+    model.updateRawValues(1, ModbusFunctionCode::ReadInputRegisters, 0, {222});
+    QCOMPARE(model.channelAt(0).rawValue, static_cast<quint16>(111));
+    QCOMPARE(model.channelAt(1).rawValue, static_cast<quint16>(222));
+}
+
+void TestChannelModel::channelIndexesInRangeByFunction()
+{
+    ChannelItem holding = makeChannel(0);
+    ChannelItem input = makeChannel(0);
+    input.functionCode = ModbusFunctionCode::ReadInputRegisters;
+    ChannelItem nextHolding = makeChannel(1);
+    ChannelItem otherSlave = makeChannel(0);
+    otherSlave.slaveId = 2;
+    ChannelItem disabledInput = makeChannel(0, false);
+    disabledInput.functionCode = ModbusFunctionCode::ReadInputRegisters;
+
+    ChannelModel model;
+    model.setChannels({holding, input, nextHolding, otherSlave, disabledInput});
+
+    // 03、从站 1、地址 0~1：只命中两条 03 通道
+    QVector<int> indexes = model.channelIndexesInRange(
+        1, ModbusFunctionCode::ReadHoldingRegisters, 0, 2);
+    QCOMPARE(indexes, QVector<int>({0, 2}));
+
+    // 04、从站 1、地址 0：只命中 04 通道，禁用通道被跳过
+    indexes = model.channelIndexesInRange(
+        1, ModbusFunctionCode::ReadInputRegisters, 0, 1);
+    QCOMPARE(indexes, QVector<int>({1}));
+
+    // 数量为 0 / 区间无覆盖时返回空
+    QVERIFY(model.channelIndexesInRange(
+        1, ModbusFunctionCode::ReadHoldingRegisters, 0, 0).isEmpty());
+    QVERIFY(model.channelIndexesInRange(
+        1, ModbusFunctionCode::ReadHoldingRegisters, 10, 2).isEmpty());
 }
 
 void TestChannelModel::updateRawValuesSkipsDisabled()

@@ -42,3 +42,30 @@
 [2026-11-11 15:12:00.229] [INFO] createTrayIcon - icon loaded: true
 [2026-11-11 15:12:00.230] [INFO] System tray icon displayed
 [2026-11-11 15:12:00.230] [CRITICAL] initSystemTray
+[2026-11-26 18:36:40.024] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-26 18:36:40.056] [DEBUG] Application started
+[2026-11-26 18:36:40.057] [INFO] Qt version: 6.8.3
+[2026-11-26 18:36:40.057] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-26 18:36:40.057] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-26 18:36:40.057] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-26 18:36:40.058] [DEBUG] All styles applied successfully.
+[2026-11-26 18:36:40.058] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"
+[2026-11-26 18:36:40.404] [INFO] createTrayIcon - icon loaded: true
+[2026-11-26 18:36:40.405] [INFO] System tray icon displayed
+[2026-11-26 18:36:40.405] [CRITICAL] initSystemTray
+[2026-11-26 18:40:11.569] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-26 18:40:11.610] [DEBUG] Application started
+[2026-11-26 18:40:11.610] [INFO] Qt version: 6.8.3
+[2026-11-26 18:40:11.612] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-26 18:40:11.612] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-26 18:40:11.612] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-26 18:40:11.612] [DEBUG] All styles applied successfully.
+[2026-11-26 18:40:11.613] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"
+[2026-11-26 18:40:50.026] [DEBUG] Log handler installed. Log file: ".log/des.log"
+[2026-11-26 18:40:50.059] [DEBUG] Application started
+[2026-11-26 18:40:50.059] [INFO] Qt version: 6.8.3
+[2026-11-26 18:40:50.059] [DEBUG] Color config loaded from: ":/stytle/color.ini" variables count: 64
+[2026-11-26 18:40:50.059] [DEBUG] Style loaded: ":/stytle/appstytle.css"
+[2026-11-26 18:40:50.059] [DEBUG] Style loaded: ":/stytle/basestytle.css"
+[2026-11-26 18:40:50.059] [DEBUG] All styles applied successfully.
+[2026-11-26 18:40:50.061] [DEBUG] config file already exists: "C:/Users/admin/AppData/Local/modbus-hmi/config.ini"

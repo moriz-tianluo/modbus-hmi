@@ -1,4 +1,5 @@
 #include "mainwidget.h"
+#include "disclaimerdialog.h"
 
 #include <QApplication>
 #include <QDir>
@@ -36,6 +37,12 @@ int main(int argc, char *argv[])
     if (!lockFile.tryLock(200)) {
         QMessageBox::information(nullptr, LANGUAGE("LG_app_alreadyRunningTitle"),
                                  LANGUAGE("LG_app_alreadyRunningText"));
+        return 0;
+    }
+
+    // 每次启动展示免费发布与免责声明，拒绝则直接退出
+    DisclaimerDialog disclaimer;
+    if (disclaimer.exec() != QDialog::Accepted) {
         return 0;
     }
 

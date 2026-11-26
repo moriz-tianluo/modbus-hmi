@@ -36,6 +36,8 @@ enum class ModbusError {
     SerialError,         // 串口发送/连接异常
     Busy,                // 上一请求未完成
     WriteEchoMismatch,   // 写应答回显与请求不一致
+    // 新增错误码一律追加在末尾，避免已有枚举数值漂移
+    IllegalDataAddress,  // 请求地址越过 0xFFFF
 };
 
 // 解析后的应答帧
@@ -95,6 +97,13 @@ public:
     // 解析一帧完整应答。成功时 result->registers / result->bits 填充数据，返回 true；
     // 失败时 *error 指明原因，返回 false。异常码应答也走失败路径，ExceptionCode 写入 result->exceptionCode
     static bool parseResponse(const QByteArray &frame, ModbusFrame *result, ModbusError *error);
+    // 组写请求帧（05/06/0F/10）：从站 + 功能码 + 起始地址 + 数量/数值 + 数据域 + CRC
+    static QByteArray buildWriteRequest(quint8 slaveId, ModbusFunctionCode code,
+                                        quint16 startAddress, quint16 quantity,
+                                        const QByteArray &payload);
+    // 写应答回显是否与请求一致（校验地址 + 数值/数量）
+    static bool isWriteEchoMatched(const QByteArray &request,
+                                   const QByteArray &responsePayload);
     // 协议层错误码 → 可读描述（使用 Language 国际化）
     static QString errorString(ModbusError error);
     // Modbus 异常码（0x01~0x0B）→ 可读描述
@@ -120,10 +129,6 @@ private:
     bool validateQuantity(ModbusFunctionCode code, quint16 quantity) const;
     // 校验写请求参数（数量/长度上限），失败时发 requestFailed 并返回 false
     bool validateWrite(ModbusFunctionCode code, quint16 quantity) const;
-    // 组写请求帧（05/06/0F/10）
-    static QByteArray buildWriteRequest(quint8 slaveId, ModbusFunctionCode code,
-                                        quint16 startAddress, quint16 quantity,
-                                        const QByteArray &payload);
     // 写请求公共入口：检查空闲/串口/参数后发起事务
     bool startWrite(ModbusFunctionCode code, quint16 startAddress, quint16 quantity,
                     const QByteArray &payload, const QByteArray &request);

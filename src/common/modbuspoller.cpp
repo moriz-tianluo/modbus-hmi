@@ -43,6 +43,16 @@ int ModbusPoller::taskCount() const
     return m_tasks.size();
 }
 
+int ModbusPoller::currentTaskIndex() const
+{
+    return m_taskIndex;
+}
+
+PollTask ModbusPoller::activeTask() const
+{
+    return m_activeTask;
+}
+
 void ModbusPoller::setSlaveId(quint8 slaveId)
 {
     m_slaveId = slaveId;

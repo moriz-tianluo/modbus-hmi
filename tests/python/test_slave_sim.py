@@ -42,6 +42,18 @@ class ReadTestCase(unittest.TestCase):
         self.assertEqual(response[1], mb.READ_INPUT)
         self.assertEqual(len(mb.register_values(response)), 2)
 
+    def test_same_address_holding_and_input(self):
+        """同一从站同一地址分别用 03 / 04 读取都应成功（混合功能码采集场景）。"""
+        sim = make_sim(register_count=8)
+        holding = sim.feed(mb.read_request(1, mb.READ_HOLDING, 3, 1))
+        input_reg = sim.feed(mb.read_request(1, mb.READ_INPUT, 3, 1))
+        self.assertTrue(mb.is_valid(holding))
+        self.assertTrue(mb.is_valid(input_reg))
+        self.assertEqual(holding[1], mb.READ_HOLDING)
+        self.assertEqual(input_reg[1], mb.READ_INPUT)
+        # 地址 3 为常量信号，两次读取应一致
+        self.assertEqual(mb.register_values(holding), mb.register_values(input_reg))
+
     def test_read_coils_after_write(self):
         sim = make_sim()
         sim.feed(mb.write_multiple_coils(1, 5, [True, False, True]))

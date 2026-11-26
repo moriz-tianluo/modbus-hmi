@@ -8,15 +8,20 @@ if(WIN32)
 endif()
 
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml Charts sql serialport PrintSupport)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-# find_package(Qt6 REQUIRED COMPONENTS Core)
-# find_package(Qt6 REQUIRED COMPONENTS Core)
-# find_package(Qt6 REQUIRED COMPONENTS Core)
-# find_package(Qt6 REQUIRED COMPONENTS Core)
-# find_package(Qt6 REQUIRED COMPONENTS Core)
-# find_package(Qt6 REQUIRED COMPONENTS Core)
 
 qt_standard_project_setup()
+
+# C++17 标准（Qt 6 默认即为 17，这里显式声明，避免依赖生成器默认值）
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# 开发期告警：尽早暴露未使用变量、隐式转换、签名比较等问题（不中断构建）
+if(MSVC)
+    add_compile_options(/W4)
+else()
+    add_compile_options(-Wall -Wextra)
+endif()
 
 set(SOURCE_FILES
     src/main.cpp
@@ -45,6 +50,7 @@ set(SOURCE_FILES
     src/component/curvesettingsdialog.cpp
     src/component/writeregisterdialog.cpp
     src/component/alarmhistorydialog.cpp
+    src/component/disclaimerdialog.cpp
     3rdparty/QCustomPlot/qcustomplot.cpp
     src/common/projectconfig.cpp
     src/common/serialworker.cpp
@@ -87,6 +93,7 @@ set(HEADER_FILES
     include/component/curvesettingsdialog.h
     include/component/writeregisterdialog.h
     include/component/alarmhistorydialog.h
+    include/component/disclaimerdialog.h
     3rdparty/QCustomPlot/qcustomplot.h
     include/common/projectconfig.h
     include/common/serialworker.h
@@ -125,13 +132,6 @@ qt_add_executable(${PROJECT_NAME}
 )
 
 
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
-target_link_libraries(modbus-hmi PRIVATE Qt6::Core)
 set_target_properties(${PROJECT_NAME} PROPERTIES
     AUTOUIC_SEARCH_PATHS
         "${PROJECT_SOURCE_DIR}/forms;${PROJECT_SOURCE_DIR}/forms/component"

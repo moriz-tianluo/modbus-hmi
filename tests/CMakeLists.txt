@@ -4,12 +4,17 @@ find_package(Qt6 REQUIRED COMPONENTS Test Gui SerialPort Sql Xml)
 set(HMI_TEST_CORE_SOURCES
     ${CMAKE_SOURCE_DIR}/src/common/modbusrtu.cpp
     ${CMAKE_SOURCE_DIR}/src/common/serialporthelper.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/modbuspoller.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/serialworker.cpp
     ${CMAKE_SOURCE_DIR}/src/common/channelmodel.cpp
     ${CMAKE_SOURCE_DIR}/src/common/savedatasql.cpp
     ${CMAKE_SOURCE_DIR}/src/base/Language.cpp
     # Q_OBJECT 头文件显式加入，保证 AUTOMOC 生成元对象
     ${CMAKE_SOURCE_DIR}/include/common/modbusrtu.h
     ${CMAKE_SOURCE_DIR}/include/common/serialporthelper.h
+    ${CMAKE_SOURCE_DIR}/include/common/modbuspoller.h
+    ${CMAKE_SOURCE_DIR}/include/common/serialworker.h
+    ${CMAKE_SOURCE_DIR}/include/common/polltask.h
     ${CMAKE_SOURCE_DIR}/include/common/channelmodel.h
     ${CMAKE_SOURCE_DIR}/include/common/savedatasql.h
     ${CMAKE_SOURCE_DIR}/include/base/Language.h
@@ -38,8 +43,10 @@ target_compile_definitions(hmi_test_core PUBLIC
 # 每个测试文件生成一个可执行程序，注册到 CTest
 set(HMI_TEST_NAMES
     test_modbusrtu
+    test_modbuspoller
     test_channelmodel
     test_savedatasql
+    test_serialworker
     test_languagekeys
 )
 

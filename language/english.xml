@@ -14,6 +14,16 @@
     <data key="LG_appVersion" value="modbus-hmi v0.9"/>
     <data key="LG_app_alreadyRunningTitle" value="Modbus HMI"/>
     <data key="LG_app_alreadyRunningText" value="The application is already running. Please do not start it again."/>
+    <data key="LG_disclaimer_title" value="Free Release &amp; Disclaimer"/>
+    <data key="LG_disclaimer_subtitle" value="Welcome to Modbus HMI. Please read the following before use."/>
+    <data key="LG_disclaimer_line1" value="1. This software is a free, open-source sample project. No fees are charged and no paid edition is offered."/>
+    <data key="LG_disclaimer_line2" value="2. The software is provided &quot;AS IS&quot;, without warranty of any kind, express or implied, including but not limited to merchantability, fitness for a particular purpose and non-infringement."/>
+    <data key="LG_disclaimer_line3" value="3. The authors and contributors shall not be liable for any device damage, data loss, production interruption, personal injury or other loss arising from the use of or inability to use this software."/>
+    <data key="LG_disclaimer_line4" value="4. Before using it in a real industrial site, verify communication, write and alarm logic in a simulated or test environment. You assume all risks."/>
+    <data key="LG_disclaimer_line5" value="5. This software is built on third-party components such as Qt, which are governed by their respective open-source licenses."/>
+    <data key="LG_disclaimer_hint" value="This notice is shown on every startup. Click &quot;I have read and agree&quot; to continue."/>
+    <data key="LG_disclaimer_accept" value="I have read and agree"/>
+    <data key="LG_disclaimer_decline" value="Exit"/>
     <data key="LG_menu_file" value="File"/>
     <data key="LG_menu_edit" value="Edit"/>
     <data key="LG_menu_device" value="Device"/>
@@ -249,6 +259,7 @@
     <data key="LG_modbus_functionMismatch" value="Function code mismatch"/>
     <data key="LG_modbus_byteCountMismatch" value="Byte count mismatch"/>
     <data key="LG_modbus_illegalQuantity" value="Requested quantity out of range"/>
+    <data key="LG_modbus_illegalAddress" value="Write address exceeds register space"/>
     <data key="LG_modbus_exception" value="Slave returned an exception"/>
     <data key="LG_modbus_timeout" value="Response timeout"/>
     <data key="LG_modbus_serialError" value="Serial port error"/>
@@ -311,6 +322,9 @@
     <data key="LG_channel_formName" value="Name"/>
     <data key="LG_channel_formAddr" value="Register Address"/>
     <data key="LG_channel_formSlave" value="Slave ID"/>
+    <data key="LG_channel_formFunction" value="Function"/>
+    <data key="LG_channel_funcHolding" value="03 Holding Register"/>
+    <data key="LG_channel_funcInput" value="04 Input Register"/>
     <data key="LG_channel_formType" value="Data Type"/>
     <data key="LG_channel_formUnit" value="Unit"/>
     <data key="LG_channel_formScale" value="Scale Factor"/>

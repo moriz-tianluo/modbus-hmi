@@ -206,7 +206,11 @@ void SerialWorker::onSerialError(QSerialPort::SerialPortError error, const QStri
 void SerialWorker::onRoundCompleted(quint8 slaveId, quint16 startAddress,
                                     const QVector<quint16> &values, qint64 rttMs)
 {
-    emit dataUpdated(slaveId, startAddress, values, rttMs);
+    // 带上本轮的读取功能码，供上层区分同地址的 03 / 04 通道
+    const quint8 functionCode = m_poller
+        ? static_cast<quint8>(m_poller->activeTask().functionCode)
+        : static_cast<quint8>(ModbusFunctionCode::ReadHoldingRegisters);
+    emit dataUpdated(slaveId, functionCode, startAddress, values, rttMs);
 }
 
 void SerialWorker::onWriteCompleted(quint8 functionCode, quint16 startAddress,

@@ -16,6 +16,7 @@ const QString kKeyChannels = QStringLiteral("channels");
 const QString kKeyName = QStringLiteral("name");
 const QString kKeyUnit = QStringLiteral("unit");
 const QString kKeySlave = QStringLiteral("slave");
+const QString kKeyFunctionCode = QStringLiteral("func");
 const QString kKeyRegister = QStringLiteral("register");
 const QString kKeyScale = QStringLiteral("scale");
 const QString kKeyRangeMin = QStringLiteral("rangeMin");
@@ -198,13 +199,16 @@ bool ChannelModel::enabledAddressRange(quint16 &startAddress, quint16 &quantity)
 
 bool ChannelModel::checkContinuity(const QVector<ChannelItem> &channels, QString *errorMessage) const
 {
-    // 多段轮询后不再要求地址连续，但仍不允许同一从站出现重复寄存器地址
+    // 多段轮询后不再要求地址连续，但仍不允许同从站同功能码出现重复寄存器地址；
+    // 03 与 04 属于不同寄存器空间，允许共用同一地址
     QSet<quint32> seenAddresses;
     for (const ChannelItem &item : channels) {
         if (!item.enabled) {
             continue;
         }
-        const quint32 key = (static_cast<quint32>(item.slaveId) << 16) | item.registerAddress;
+        const quint32 key = (static_cast<quint32>(item.slaveId) << 24)
+                            | (static_cast<quint32>(static_cast<quint8>(item.functionCode)) << 16)
+                            | item.registerAddress;
         if (seenAddresses.contains(key)) {
             setError(errorMessage, LANGUAGE("LG_channel_addrNotContiguous"));
             return false;
@@ -214,27 +218,31 @@ bool ChannelModel::checkContinuity(const QVector<ChannelItem> &channels, QString
     return true;
 }
 
-QVector<PollTask> ChannelModel::buildPollTasks(ModbusFunctionCode functionCode) const
+QVector<PollTask> ChannelModel::buildPollTasks() const
 {
-    const bool coilFunction = (functionCode == ModbusFunctionCode::ReadCoils
-                               || functionCode == ModbusFunctionCode::ReadDiscreteInputs);
-    const int maxQuantity = coilFunction ? 2000 : 125;
-
-    // 先按从站归集启用通道地址
-    QMap<quint8, QVector<quint16>> addressMap;
+    // 先按（从站 + 功能码）归集启用通道地址，两种功能码各自独立成段
+    QMap<quint32, QVector<quint16>> addressMap;
     for (const ChannelItem &item : m_channels) {
         if (item.enabled) {
-            addressMap[item.slaveId].append(item.registerAddress);
+            const quint32 key = (static_cast<quint32>(item.slaveId) << 8)
+                                | static_cast<quint8>(item.functionCode);
+            addressMap[key].append(item.registerAddress);
         }
     }
 
     QVector<PollTask> tasks;
     for (auto it = addressMap.begin(); it != addressMap.end(); ++it) {
+        const ModbusFunctionCode functionCode =
+            static_cast<ModbusFunctionCode>(it.key() & 0xFF);
+        const bool coilFunction = (functionCode == ModbusFunctionCode::ReadCoils
+                                   || functionCode == ModbusFunctionCode::ReadDiscreteInputs);
+        const int maxQuantity = coilFunction ? 2000 : 125;
+
         QVector<quint16> addresses = it.value();
         std::sort(addresses.begin(), addresses.end());
         addresses.erase(std::unique(addresses.begin(), addresses.end()), addresses.end());
 
-        // 同一从站内按地址连续性 + 单次读取上限切段
+        // 同组内按地址连续性 + 单次读取上限切段
         int begin = 0;
         while (begin < addresses.size()) {
             int end = begin;
@@ -245,7 +253,7 @@ QVector<PollTask> ChannelModel::buildPollTasks(ModbusFunctionCode functionCode) 
             }
 
             PollTask task;
-            task.slaveId = it.key();
+            task.slaveId = static_cast<quint8>(it.key() >> 8);
             task.functionCode = functionCode;
             task.startAddress = addresses.at(begin);
             task.quantity = static_cast<quint16>(addresses.at(end) - addresses.at(begin) + 1);
@@ -298,6 +306,25 @@ void ChannelModel::updateRawValues(quint8 slaveId, quint16 startAddress,
     }
 }
 
+void ChannelModel::updateRawValues(quint8 slaveId, ModbusFunctionCode functionCode,
+                                   quint16 startAddress, const QVector<quint16> &values)
+{
+    for (int offset = 0; offset < values.size(); ++offset) {
+        const quint16 address = static_cast<quint16>(startAddress + offset);
+        for (int index = 0; index < m_channels.size(); ++index) {
+            const ChannelItem &item = m_channels.at(index);
+            // 同从站同地址可能同时存在 03 / 04 两条通道，必须按功能码精确匹配
+            if (!item.enabled || item.slaveId != slaveId
+                || item.functionCode != functionCode
+                || item.registerAddress != address) {
+                continue;
+            }
+            setChannelRawValue(index, values.at(offset));
+            break;
+        }
+    }
+}
+
 void ChannelModel::setChannelRawValue(int index, quint16 rawValue)
 {
     if (index < 0 || index >= m_channels.size()) {
@@ -307,6 +334,31 @@ void ChannelModel::setChannelRawValue(int index, quint16 rawValue)
     ChannelItem &item = m_channels[index];
     item.rawValue = rawValue;
     emit channelValueChanged(index, item.value());
+}
+
+QVector<int> ChannelModel::channelIndexesInRange(quint8 slaveId,
+                                                ModbusFunctionCode functionCode,
+                                                quint16 startAddress, int quantity) const
+{
+    QVector<int> indexes;
+    if (quantity <= 0) {
+        return indexes;
+    }
+
+    const quint32 rangeBegin = startAddress;
+    const quint32 rangeEnd = rangeBegin + static_cast<quint32>(quantity);
+    for (int index = 0; index < m_channels.size(); ++index) {
+        const ChannelItem &item = m_channels.at(index);
+        if (!item.enabled || item.slaveId != slaveId
+            || item.functionCode != functionCode) {
+            continue;
+        }
+        const quint32 address = item.registerAddress;
+        if (address >= rangeBegin && address < rangeEnd) {
+            indexes.append(index);
+        }
+    }
+    return indexes;
 }
 
 bool ChannelModel::loadFromJson(const QString &filePath, QString *errorMessage)
@@ -401,6 +453,12 @@ ChannelItem ChannelModel::channelFromObject(const QJsonObject &obj, bool *ok) co
     item.name = obj.value(kKeyName).toString();
     item.unit = obj.value(kKeyUnit).toString();
     item.slaveId = static_cast<quint8>(obj.value(kKeySlave).toInt(1));
+    // 功能码仅支持 03 / 04，缺省或非法值回退为 03
+    const int functionValue = obj.value(kKeyFunctionCode).toInt(
+        static_cast<int>(ModbusFunctionCode::ReadHoldingRegisters));
+    item.functionCode = (functionValue == static_cast<int>(ModbusFunctionCode::ReadInputRegisters))
+                            ? ModbusFunctionCode::ReadInputRegisters
+                            : ModbusFunctionCode::ReadHoldingRegisters;
     item.registerAddress = static_cast<quint16>(obj.value(kKeyRegister).toInt());
     item.dataType = static_cast<ChannelDataType>(obj.value(kKeyDataType).toInt(0));
     item.scale = obj.value(kKeyScale).toDouble(1.0);
@@ -426,6 +484,7 @@ QJsonObject ChannelModel::channelToObject(const ChannelItem &item) const
     obj.insert(kKeyName, item.name);
     obj.insert(kKeyUnit, item.unit);
     obj.insert(kKeySlave, item.slaveId);
+    obj.insert(kKeyFunctionCode, static_cast<int>(item.functionCode));
     obj.insert(kKeyRegister, item.registerAddress);
     obj.insert(kKeyDataType, static_cast<int>(item.dataType));
     obj.insert(kKeyScale, item.scale);

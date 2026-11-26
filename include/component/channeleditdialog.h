@@ -49,6 +49,8 @@ private:
     void updateColorButton();
     // 数据类型枚举 → 显示文本
     QString dataTypeText(ChannelDataType type) const;
+    // 功能码枚举 → 显示文本（03 保持寄存器 / 04 输入寄存器）
+    QString functionCodeText(ModbusFunctionCode code) const;
     // 返回当前通道中未占用的最小寄存器地址
     quint16 nextFreeAddress() const;
 
@@ -60,6 +62,7 @@ private:
     QTableWidget *m_table = nullptr;
     QLineEdit *m_nameEdit = nullptr;
     QSpinBox *m_slaveSpin = nullptr;
+    QComboBox *m_functionCombo = nullptr;
     QSpinBox *m_addressSpin = nullptr;
     QComboBox *m_typeCombo = nullptr;
     QLineEdit *m_unitEdit = nullptr;

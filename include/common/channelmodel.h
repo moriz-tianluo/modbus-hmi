@@ -19,6 +19,8 @@ struct ChannelItem {
     QString name;                // 通道业务名称，如 "温度"、"压力"
     QString unit;                // 工程单位，如 "℃"、"MPa"
     quint8 slaveId = 1;          // 所属 Modbus 从站地址，支持同工程混合多从站
+    // 读取该通道使用的功能码：03 保持寄存器 / 04 输入寄存器，可按通道分别指定
+    ModbusFunctionCode functionCode = ModbusFunctionCode::ReadHoldingRegisters;
     quint16 registerAddress = 0; // 对应 Modbus 寄存器地址（起始 0）
     ChannelDataType dataType = ChannelDataType::Unsigned16;  // 寄存器数据类型
     double scale = 0.1;          // 换算系数：工程值 = 原始寄存器值 × scale
@@ -76,7 +78,7 @@ public:
 
     // 把启用通道按（从站 + 功能码 + 地址连续）切分为轮询任务。
     // 同从站地址断档会拆成多段，超过单次读取上限会继续切分；返回结果可直接交给 SerialWorker。
-    QVector<PollTask> buildPollTasks(ModbusFunctionCode functionCode) const;
+    QVector<PollTask> buildPollTasks() const;
 
     // 校验启用通道的寄存器地址是否连续且不重复。
     // 内部逻辑：收集所有 enabled=true 的地址 → 升序排序 → 逐项检查是否为前一项 + 1。
@@ -84,9 +86,9 @@ public:
     // 失败时若 errorMessage 非空，写入国际化错误文案（"地址不连续或重复"）。
     bool validateAddressContinuity(QString *errorMessage = nullptr) const;
 
-    // 计算启用通道覆盖的连续地址段范围。
-    // startAddress = min(启用通道地址), quantity = max(启用通道地址) - min + 1。
-    // 无启用通道时返回 false；调用方应在 startPolling 前先调 validateAddressContinuity 确保 quantity 有效。
+    // 兼容旧接口：仅按启用通道的寄存器地址统计 min~max 连续段，不区分从站与功能码。
+    // 混合多从站 / 03+04 场景请改用 buildPollTasks()，不要依据本函数构造单段读取。
+    // 无启用通道时返回 false。
     bool enabledAddressRange(quint16 &startAddress, quint16 &quantity) const;
 
     // ---- 曲线缓存点数 ----
@@ -100,8 +102,16 @@ public:
     void updateRawValues(quint16 startAddress, const QVector<quint16> &values);
     // 多从站版本：额外按 slaveId 过滤，避免同地址不同从站串数据
     void updateRawValues(quint8 slaveId, quint16 startAddress, const QVector<quint16> &values);
+    // 多从站 + 功能码版本：同从站同地址可分别配置 03 / 04，回填时按三者精确匹配
+    void updateRawValues(quint8 slaveId, ModbusFunctionCode functionCode,
+                         quint16 startAddress, const QVector<quint16> &values);
     // 单通道原始值更新，index 越界静默忽略，成功后发射 channelValueChanged
     void setChannelRawValue(int index, quint16 rawValue);
+
+    // 返回一轮应答覆盖的通道下标：按「从站 + 功能码 + 地址区间」精确匹配，跳过禁用通道。
+    // 供落库 / 批量处理使用，避免同地址 03、04 通道互相串值。
+    QVector<int> channelIndexesInRange(quint8 slaveId, ModbusFunctionCode functionCode,
+                                       quint16 startAddress, int quantity) const;
 
     // ---- JSON 配置导入导出 ----
     // 从文件导入通道配置并替换当前列表。失败时写 errorMessage 并返回 false。

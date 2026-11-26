@@ -1,6 +1,9 @@
 #include <QtTest>
 
+#include <QSignalSpy>
+
 #include "modbusrtu.h"
+#include "serialporthelper.h"
 
 // ModbusRtu 协议层单元测试：CRC、组帧、应答解析、异常码与错误分支。
 class TestModbusRtu : public QObject
@@ -16,6 +19,12 @@ private slots:
     void parseExceptionResponse();
     void parseCrcError();
     void parseShortFrame();
+    // 写请求组帧（05 / 06 / 0F / 10）
+    void buildWriteFrames();
+    // 写应答回显校验：一致 / 数值不一致 / 长度异常
+    void writeEchoValidation();
+    // 写入地址越界时拒绝下发
+    void writeAddressOverflowRejected();
 
 private:
     // 把数据域补上 CRC，拼成一帧完整应答
@@ -123,6 +132,82 @@ void TestModbusRtu::parseShortFrame()
     QVERIFY(!ModbusRtu::parseResponse(QByteArray::fromHex("0103"), &result, &error));
     QVERIFY(error == ModbusError::InvalidFrame);
     QVERIFY(!ModbusRtu::errorString(error).isEmpty());
+}
+
+void TestModbusRtu::buildWriteFrames()
+{
+    // 05 写单线圈：地址 0x0010 闭合 → 数值 0xFF00
+    const QByteArray coilOn = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteSingleCoil, 0x0010, 0xFF00, QByteArray());
+    QCOMPARE(coilOn, withCrc(QByteArray::fromHex("01050010FF00")));
+    QCOMPARE(coilOn.size(), 8);
+
+    // 05 写单线圈：断开 → 数值 0x0000
+    const QByteArray coilOff = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteSingleCoil, 0x0010, 0x0000, QByteArray());
+    QCOMPARE(coilOff, withCrc(QByteArray::fromHex("010500100000")));
+
+    // 06 写单寄存器：地址 0x0010，值 0x0064
+    const QByteArray singleRegister = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteSingleRegister, 0x0010, 0x0064, QByteArray());
+    QCOMPARE(singleRegister, withCrc(QByteArray::fromHex("010600100064")));
+
+    // 0F 写多线圈：10 个线圈，字节数 2，位图 0x4D 0x03
+    const QByteArray multipleCoils = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteMultipleCoils, 0x0020, 10,
+        QByteArray::fromHex("024D03"));
+    QCOMPARE(multipleCoils, withCrc(QByteArray::fromHex("010F0020000A024D03")));
+
+    // 10 写多寄存器：2 个寄存器，字节数 4，值 10、20
+    const QByteArray multipleRegisters = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteMultipleRegisters, 0x0010, 2,
+        QByteArray::fromHex("04000A0014"));
+    QCOMPARE(multipleRegisters, withCrc(QByteArray::fromHex("01100010000204000A0014")));
+}
+
+void TestModbusRtu::writeEchoValidation()
+{
+    // 06 请求：回显为地址 + 值（请求第 3~6 字节）
+    const QByteArray request = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteSingleRegister, 0x0010, 0x0064, QByteArray());
+    const QByteArray echo = withCrc(request.left(6));
+
+    ModbusFrame result;
+    ModbusError error = ModbusError::NoError;
+    QVERIFY(ModbusRtu::parseResponse(echo, &result, &error));
+    QCOMPARE(result.payload, QByteArray::fromHex("00100064"));
+    QVERIFY(ModbusRtu::isWriteEchoMatched(request, result.payload));
+
+    // 数值不一致：地址同为 0x0010，但值被改成 0x0065
+    QVERIFY(!ModbusRtu::isWriteEchoMatched(request, QByteArray::fromHex("00100065")));
+    // 地址不一致
+    QVERIFY(!ModbusRtu::isWriteEchoMatched(request, QByteArray::fromHex("00110064")));
+    // 长度异常
+    QVERIFY(!ModbusRtu::isWriteEchoMatched(request, QByteArray::fromHex("0010")));
+
+    // 10 写多寄存器应答回显：地址 + 数量
+    const QByteArray multiRequest = ModbusRtu::buildWriteRequest(
+        0x01, ModbusFunctionCode::WriteMultipleRegisters, 0x0020, 3,
+        QByteArray::fromHex("06000A0014001E"));
+    QVERIFY(ModbusRtu::isWriteEchoMatched(multiRequest, QByteArray::fromHex("00200003")));
+}
+
+void TestModbusRtu::writeAddressOverflowRejected()
+{
+    SerialPortHelper serial;
+    ModbusRtu rtu(&serial);
+    QSignalSpy failedSpy(&rtu, &ModbusRtu::requestFailed);
+
+    // 0xFFFF 起写 2 个寄存器：越过 0xFFFF，地址校验阶段直接拒绝
+    QVERIFY(!rtu.writeMultipleRegisters(0xFFFF, {1, 2}));
+    QCOMPARE(failedSpy.count(), 1);
+    QCOMPARE(failedSpy.at(0).at(0).value<ModbusError>(), ModbusError::IllegalDataAddress);
+
+    // 边界合法（0xFFFF 单个）：通过地址校验，因串口未打开而失败
+    failedSpy.clear();
+    QVERIFY(!rtu.writeSingleRegister(0xFFFF, 0x1234));
+    QCOMPARE(failedSpy.count(), 1);
+    QCOMPARE(failedSpy.at(0).at(0).value<ModbusError>(), ModbusError::SerialError);
 }
 
 QTEST_GUILESS_MAIN(TestModbusRtu)

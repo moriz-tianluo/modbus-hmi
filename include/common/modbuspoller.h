@@ -33,6 +33,10 @@ public:
     void setTasks(const QVector<PollTask> &tasks);
     QVector<PollTask> tasks() const;
     int taskCount() const;
+    // 当前任务下标（任务列表为空时恒为 0），供状态展示与测试使用
+    int currentTaskIndex() const;
+    // 最近一次已发出请求对应的任务（应答回传时用于带出从站 / 功能码 / 地址）
+    PollTask activeTask() const;
 
     // 启动时会同步下发到 ModbusRtu；运行中修改会在下一轮生效
     void setSlaveId(quint8 slaveId);

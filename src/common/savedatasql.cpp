@@ -211,7 +211,7 @@ void SaveDataSQL::enqueueAlarm(int level, const QString &message)
 
     QSqlQuery query(m_db);
     if (!query.prepare(QStringLiteral(
-            "INSERT INTO alarm(ts, level, message) VALUES(?, ?, ?)"))) {
+            "INSERT INTO alarm(ts, level, message, acknowledged) VALUES(?, ?, ?, ?)"))) {
         emit databaseError(query.lastError().text());
         return;
     }
@@ -219,6 +219,8 @@ void SaveDataSQL::enqueueAlarm(int level, const QString &message)
     query.addBindValue(QDateTime::currentMSecsSinceEpoch());
     query.addBindValue(level);
     query.addBindValue(message);
+    // 显式写入确认状态，避免依赖列默认值（老库迁移缺失列时也能及早暴露）
+    query.addBindValue(0);
 
     if (!query.exec()) {
         emit databaseError(query.lastError().text());

@@ -2,6 +2,7 @@
 #include "Language.h"
 
 #include <QCheckBox>
+#include <QCloseEvent>
 #include <QComboBox>
 #include <QFormLayout>
 #include <QHBoxLayout>
@@ -102,6 +103,26 @@ void WriteRegisterDialog::initConnections()
             this, &WriteRegisterDialog::onProtectToggled);
     connect(m_writeButton, &QPushButton::clicked, this, &WriteRegisterDialog::submitWrite);
     connect(m_cancelButton, &QPushButton::clicked, this, &QDialog::reject);
+    connect(m_valueEdit, &QLineEdit::textChanged,
+            this, &WriteRegisterDialog::onValueTextChanged);
+}
+
+void WriteRegisterDialog::onValueTextChanged(const QString &text)
+{
+    Q_UNUSED(text)
+    syncQuantityFromValues();
+}
+
+void WriteRegisterDialog::syncQuantityFromValues()
+{
+    const int mode = m_modeCombo->currentData().toInt();
+    if (mode != ModeMultipleRegisters && mode != ModeMultipleCoils) {
+        return;
+    }
+
+    const QStringList tokens = m_valueEdit->text().split(
+        QRegularExpression(QStringLiteral("[,;\\s]+")), Qt::SkipEmptyParts);
+    m_quantitySpin->setValue(qMax(1, tokens.size()));
 }
 
 void WriteRegisterDialog::onModeChanged(int index)
@@ -122,9 +143,13 @@ void WriteRegisterDialog::refreshModeState()
     const bool coil = (mode == ModeSingleCoil || mode == ModeMultipleCoils);
 
     m_quantitySpin->setEnabled(multiple);
+    // 多值模式下数量由值列表推导，禁止手工修改，避免与实际下发个数不一致
+    m_quantitySpin->setReadOnly(multiple);
     m_quantitySpin->setRange(1, coil ? 1968 : 123);
     if (!multiple) {
         m_quantitySpin->setValue(1);
+    } else {
+        syncQuantityFromValues();
     }
 
     if (coil) {
@@ -249,6 +274,25 @@ void WriteRegisterDialog::setWriteInFlight(bool inFlight)
     m_quantitySpin->setEnabled(!inFlight);
     m_valueEdit->setEnabled(!inFlight);
     m_protectCheck->setEnabled(!inFlight);
+    // 写入进行中禁止取消，避免对话框关闭后收不到结果
+    m_cancelButton->setEnabled(!inFlight);
+}
+
+void WriteRegisterDialog::reject()
+{
+    if (m_writeInFlight) {
+        return;
+    }
+    QDialog::reject();
+}
+
+void WriteRegisterDialog::closeEvent(QCloseEvent *event)
+{
+    if (m_writeInFlight) {
+        event->ignore();
+        return;
+    }
+    QDialog::closeEvent(event);
 }
 
 void WriteRegisterDialog::onWriteSucceeded(quint8 functionCode, quint16 startAddress,

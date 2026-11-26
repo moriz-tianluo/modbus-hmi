@@ -38,10 +38,11 @@ void ChannelEditDialog::buildUi()
 
     // ---- 通道列表 ----
     m_table = new QTableWidget(this);
-    m_table->setColumnCount(6);
+    m_table->setColumnCount(7);
     m_table->setHorizontalHeaderLabels({
         LANGUAGE("LG_table_channel"),
         LANGUAGE("LG_channel_formSlave"),
+        LANGUAGE("LG_channel_formFunction"),
         LANGUAGE("LG_channel_formAddr"),
         LANGUAGE("LG_channel_formType"),
         LANGUAGE("LG_channel_formRange"),
@@ -55,10 +56,11 @@ void ChannelEditDialog::buildUi()
     m_table->horizontalHeader()->setStretchLastSection(false);
     m_table->horizontalHeader()->setSectionResizeMode(0, QHeaderView::Stretch);
     m_table->setColumnWidth(1, 80);
-    m_table->setColumnWidth(2, 110);
+    m_table->setColumnWidth(2, 140);
     m_table->setColumnWidth(3, 110);
-    m_table->setColumnWidth(4, 140);
-    m_table->setColumnWidth(5, 80);
+    m_table->setColumnWidth(4, 110);
+    m_table->setColumnWidth(5, 140);
+    m_table->setColumnWidth(6, 80);
     layout->addWidget(m_table, 1);
 
     connect(m_table, &QTableWidget::itemSelectionChanged,
@@ -94,6 +96,13 @@ void ChannelEditDialog::buildForm(QVBoxLayout *layout)
     m_nameEdit = new QLineEdit(group);
     m_slaveSpin = new QSpinBox(group);
     m_slaveSpin->setRange(1, 247);
+
+    m_functionCombo = new QComboBox(group);
+    m_functionCombo->addItem(LANGUAGE("LG_channel_funcHolding"),
+                             static_cast<int>(ModbusFunctionCode::ReadHoldingRegisters));
+    m_functionCombo->addItem(LANGUAGE("LG_channel_funcInput"),
+                             static_cast<int>(ModbusFunctionCode::ReadInputRegisters));
+
     m_addressSpin = new QSpinBox(group);
     m_addressSpin->setRange(0, 65535);
     m_addressSpin->setDisplayIntegerBase(10);
@@ -131,6 +140,7 @@ void ChannelEditDialog::buildForm(QVBoxLayout *layout)
 
     form->addRow(LANGUAGE("LG_channel_formName"), m_nameEdit);
     form->addRow(LANGUAGE("LG_channel_formSlave"), m_slaveSpin);
+    form->addRow(LANGUAGE("LG_channel_formFunction"), m_functionCombo);
     form->addRow(LANGUAGE("LG_channel_formAddr"), m_addressSpin);
     form->addRow(LANGUAGE("LG_channel_formType"), m_typeCombo);
     form->addRow(LANGUAGE("LG_channel_formUnit"), m_unitEdit);
@@ -168,13 +178,14 @@ void ChannelEditDialog::refreshTable()
         m_table->setItem(row, 0, nameItem);
 
         m_table->setItem(row, 1, new QTableWidgetItem(QString::number(item.slaveId)));
-        m_table->setItem(row, 2, new QTableWidgetItem(
+        m_table->setItem(row, 2, new QTableWidgetItem(functionCodeText(item.functionCode)));
+        m_table->setItem(row, 3, new QTableWidgetItem(
             QString::number(item.registerAddress)));
-        m_table->setItem(row, 3, new QTableWidgetItem(dataTypeText(item.dataType)));
-        m_table->setItem(row, 4, new QTableWidgetItem(
+        m_table->setItem(row, 4, new QTableWidgetItem(dataTypeText(item.dataType)));
+        m_table->setItem(row, 5, new QTableWidgetItem(
             QStringLiteral("%1 ~ %2").arg(item.rangeMin, 0, 'f', 2)
                                      .arg(item.rangeMax, 0, 'f', 2)));
-        m_table->setItem(row, 5, new QTableWidgetItem(QString::number(item.decimals)));
+        m_table->setItem(row, 6, new QTableWidgetItem(QString::number(item.decimals)));
     }
 
     if (m_currentIndex >= 0 && m_currentIndex < count) {
@@ -193,6 +204,8 @@ void ChannelEditDialog::loadChannelToForm(int index)
 
     m_nameEdit->setText(item.name);
     m_slaveSpin->setValue(item.slaveId);
+    m_functionCombo->setCurrentIndex(
+        item.functionCode == ModbusFunctionCode::ReadInputRegisters ? 1 : 0);
     m_addressSpin->setValue(item.registerAddress);
     m_typeCombo->setCurrentIndex(item.dataType == ChannelDataType::Signed16 ? 1 : 0);
     m_unitEdit->setText(item.unit);
@@ -215,6 +228,7 @@ void ChannelEditDialog::clearForm()
 
     m_nameEdit->clear();
     m_slaveSpin->setValue(1);
+    m_functionCombo->setCurrentIndex(0);
     m_addressSpin->setValue(nextFreeAddress());
     m_typeCombo->setCurrentIndex(0);
     m_unitEdit->clear();
@@ -348,10 +362,13 @@ bool ChannelEditDialog::readForm(ChannelItem *item, int ignoreIndex)
 
     const quint8 slaveId = static_cast<quint8>(m_slaveSpin->value());
     const quint16 address = static_cast<quint16>(m_addressSpin->value());
+    const ModbusFunctionCode functionCode =
+        static_cast<ModbusFunctionCode>(m_functionCombo->currentData().toInt());
     for (int index = 0; index < m_model->channelCount(); ++index) {
-        // 只拦同一从站下的重复地址，不同从站可共用地址
+        // 只拦同一从站同一功能码下的重复地址；03 与 04 可共用地址
         if (index != ignoreIndex
             && m_model->channelAt(index).slaveId == slaveId
+            && m_model->channelAt(index).functionCode == functionCode
             && m_model->channelAt(index).registerAddress == address) {
             QMessageBox::warning(this, LANGUAGE("LG_channel_mgrTitle"),
                                  LANGUAGE("LG_channel_errDuplicateAddr"));
@@ -373,6 +390,7 @@ bool ChannelEditDialog::readForm(ChannelItem *item, int ignoreIndex)
 
     result.name = name;
     result.slaveId = slaveId;
+    result.functionCode = static_cast<ModbusFunctionCode>(m_functionCombo->currentData().toInt());
     result.registerAddress = address;
     result.dataType = static_cast<ChannelDataType>(m_typeCombo->currentData().toInt());
     result.unit = m_unitEdit->text().trimmed();
@@ -416,6 +434,13 @@ QString ChannelEditDialog::dataTypeText(ChannelDataType type) const
     return type == ChannelDataType::Signed16
         ? LANGUAGE("LG_channel_typeSigned")
         : LANGUAGE("LG_channel_typeUnsigned");
+}
+
+QString ChannelEditDialog::functionCodeText(ModbusFunctionCode code) const
+{
+    return code == ModbusFunctionCode::ReadInputRegisters
+        ? LANGUAGE("LG_channel_funcInput")
+        : LANGUAGE("LG_channel_funcHolding");
 }
 
 quint16 ChannelEditDialog::nextFreeAddress() const

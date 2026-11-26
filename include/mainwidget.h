@@ -147,7 +147,7 @@ private slots:
     void onWorkerReconnectStateChanged(bool reconnecting, int attempt);
     void onWorkerPollingStateChanged(bool running);
     void onWorkerPollFailed(ModbusError error, const QString &message);
-    void onWorkerDataUpdated(quint8 slaveId, quint16 startAddress,
+    void onWorkerDataUpdated(quint8 slaveId, quint8 functionCode, quint16 startAddress,
                              const QVector<quint16> &values, qint64 rttMs);
     // 写操作结果
     void onWorkerWriteSucceeded(quint8 functionCode, quint16 startAddress, quint16 quantity);

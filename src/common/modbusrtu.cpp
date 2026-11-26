@@ -167,6 +167,12 @@ bool ModbusRtu::startWrite(ModbusFunctionCode code, quint16 startAddress, quint1
 {
     Q_UNUSED(payload)
 
+    // 地址空间校验：起始地址 + 数量不能越过 0xFFFF，避免溢出后被截断发出
+    if (static_cast<quint32>(startAddress) + quantity > 0x10000U) {
+        emit requestFailed(ModbusError::IllegalDataAddress,
+                           LANGUAGE("LG_modbus_illegalAddress"));
+        return false;
+    }
     if (!m_serial || !m_serial->isOpen()) {
         emit requestFailed(ModbusError::SerialError, LANGUAGE("LG_modbus_serialNotOpen"));
         return false;
@@ -367,6 +373,8 @@ QString ModbusRtu::errorString(ModbusError error)
         return LANGUAGE("LG_modbus_byteCountMismatch");
     case ModbusError::IllegalQuantity:
         return LANGUAGE("LG_modbus_illegalQuantity");
+    case ModbusError::IllegalDataAddress:
+        return LANGUAGE("LG_modbus_illegalAddress");
     case ModbusError::ExceptionCode:
         return LANGUAGE("LG_modbus_exception");
     case ModbusError::Timeout:
@@ -463,6 +471,14 @@ void ModbusRtu::startTransaction(const QByteArray &request)
     emit requestFailed(ModbusError::SerialError, LANGUAGE("LG_modbus_sendFailed"));
 }
 
+bool ModbusRtu::isWriteEchoMatched(const QByteArray &request,
+                                   const QByteArray &responsePayload)
+{
+    // 请求与应答同构：从站 + 功能码 + 地址(2) + 数值/数量(2)，取地址与数值比较
+    return request.size() >= 6 && responsePayload.size() == 4
+           && responsePayload == request.mid(2, 4);
+}
+
 void ModbusRtu::handleFrame(const QByteArray &frame, qint64 rttMs)
 {
     ModbusFrame parsed;
@@ -493,12 +509,11 @@ void ModbusRtu::handleFrame(const QByteArray &frame, qint64 rttMs)
 
     // 写操作：从站回显必须与请求的地址/数值一致，避免把旧应答误判为成功
     if (m_writeOperation) {
-        const QByteArray expectedEcho = m_request.mid(2, 4);
         const quint8 functionCode = static_cast<quint8>(m_functionCode);
         const quint16 startAddress = m_startAddress;
         const quint16 quantity = m_quantity;
 
-        if (parsed.payload != expectedEcho) {
+        if (!isWriteEchoMatched(m_request, parsed.payload)) {
             retryOrFail(ModbusError::WriteEchoMismatch,
                         errorString(ModbusError::WriteEchoMismatch));
             return;

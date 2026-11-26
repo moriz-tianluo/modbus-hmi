@@ -620,8 +620,8 @@ void MainWidget::applyCurrentPollingTasks()
     const ModbusFunctionCode funcCode = ui->modbusSetWidget->currentFunctionCode();
     const int intervalMs = ui->modbusSetWidget->currentIntervalMs();
 
-    // 按通道配置生成多从站 / 多段轮询任务；无通道时回退到设置卡片的单段配置
-    QVector<PollTask> tasks = m_channelModel->buildPollTasks(funcCode);
+    // 按通道配置（从站 + 功能码 + 地址段）生成轮询任务；无通道时回退到设置卡片的单段配置
+    QVector<PollTask> tasks = m_channelModel->buildPollTasks();
     if (tasks.isEmpty()) {
         PollTask manualTask;
         manualTask.slaveId = ui->modbusSetWidget->currentSlaveId();
@@ -800,7 +800,7 @@ void MainWidget::onWorkerPollFailed(ModbusError error, const QString &message)
     ui->OperationWidget->setStatusText(message);
 }
 
-void MainWidget::onWorkerDataUpdated(quint8 slaveId, quint16 startAddress,
+void MainWidget::onWorkerDataUpdated(quint8 slaveId, quint8 functionCode, quint16 startAddress,
                                      const QVector<quint16> &values, qint64 rttMs)
 {
     // 采集统计：本轮成功，累计请求数与 RTT
@@ -809,8 +809,9 @@ void MainWidget::onWorkerDataUpdated(quint8 slaveId, quint16 startAddress,
     // 实时数据表：同一轮请求共用一个往返耗时，逐行刷新 RTT 列
     ui->realDataWidget->setRoundTripTime(static_cast<int>(rttMs));
 
-    // 一轮采集完成 → 按从站 + 地址批量更新 ChannelModel 里的通道原始值
-    m_channelModel->updateRawValues(slaveId, startAddress, values);
+    // 一轮采集完成 → 按从站 + 功能码 + 地址批量更新通道原始值
+    m_channelModel->updateRawValues(
+        slaveId, static_cast<ModbusFunctionCode>(functionCode), startAddress, values);
 
     // 阈值判定：连续越限达到去抖次数才记录报警，恢复后记录解除
     evaluateAlarmThresholds();
@@ -818,17 +819,16 @@ void MainWidget::onWorkerDataUpdated(quint8 slaveId, quint16 startAddress,
     // 曲线本轮所有通道已追加完毕，统一重绘一次（避免每通道各重绘一次）
     ui->realCurveWidget->endRoundUpdate();
 
-    // 落库：整理本轮覆盖的通道（通道序号 + 原始值 + 工程值），跨线程投递给数据库线程
+    // 落库：只整理本轮应答实际覆盖的通道（从站 + 功能码 + 地址区间），
+    // 同一地址的 03 / 04 通道互不串值
+    const QVector<int> coveredIndexes = m_channelModel->channelIndexesInRange(
+        slaveId, static_cast<ModbusFunctionCode>(functionCode),
+        startAddress, values.size());
+
     QVector<SampleChannelData> rows;
-    const int endAddress = static_cast<int>(startAddress) + static_cast<int>(values.size());
-    for (int index = 0; index < m_channelModel->channelCount(); ++index) {
+    rows.reserve(coveredIndexes.size());
+    for (int index : coveredIndexes) {
         const ChannelItem &item = m_channelModel->channelAt(index);
-        if (item.slaveId != slaveId) {
-            continue;
-        }
-        if (item.registerAddress < startAddress || item.registerAddress >= endAddress) {
-            continue;
-        }
         SampleChannelData row;
         row.channel = index;
         row.raw = item.rawValue;

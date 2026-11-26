@@ -75,9 +75,9 @@ signals:
     void reconnectStateChanged(bool reconnecting, int attempt);  // SerialPortHelper 的重连状态透传
 
     // ---- 采集结果 ----
-    // 一轮采集完成。slaveId / startAddress 对应当前轮询任务，
+    // 一轮采集完成。slaveId / functionCode / startAddress 对应当前轮询任务，
     // values 寄存器值数组，按 Modbus 应答顺序排列
-    void dataUpdated(quint8 slaveId, quint16 startAddress,
+    void dataUpdated(quint8 slaveId, quint8 functionCode, quint16 startAddress,
                      const QVector<quint16> &values, qint64 rttMs);
     // 写操作结果（成功时回显已校验）
     void writeSucceeded(quint8 functionCode, quint16 startAddress, quint16 quantity);
