@@ -2,6 +2,11 @@ cmake_minimum_required(VERSION 3.19)
 set(PROJECT_NAME "modbus-hmi")
 project(${PROJECT_NAME} LANGUAGES CXX)
 
+# Windows 资源编译（exe 图标）；其他平台跳过
+if(WIN32)
+    enable_language(RC)
+endif()
+
 find_package(Qt6 6.5 REQUIRED COMPONENTS Core Widgets Xml Charts sql serialport PrintSupport)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 # find_package(Qt6 REQUIRED COMPONENTS Core)
@@ -49,6 +54,11 @@ set(SOURCE_FILES
     src/common/modbuspoller.cpp
     src/common/savedatasql.cpp
 )
+
+# Windows：把图标资源编进 exe（双击运行 / 资源管理器显示自定义图标）
+if(WIN32)
+    list(APPEND SOURCE_FILES "${CMAKE_SOURCE_DIR}/resource/win/app.rc")
+endif()
 
 set(HEADER_FILES
     include/mainwidget.h

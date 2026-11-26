@@ -26,6 +26,8 @@ tags
 Makefile*
 *.prl
 *.app
+# Windows 资源脚本：仅保留应用图标定义
+!resource/win/app.rc
 moc_*.cpp
 ui_*.h
 qrc_*.cpp

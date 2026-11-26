@@ -233,6 +233,7 @@ cmake --build build --config Debug
 ### 6.4 运行说明
 
 - 构建后 CMake 会自动把 `language/` 拷贝到可执行文件所在目录（多配置生成器下即 `Debug/`、`Release/` 内），语言包按相对路径加载
+- Windows 下由 `resource/win/app.rc` 把 `appIcon.ico` 编进 exe，资源管理器、任务栏与快捷方式均显示应用图标
 - 首次运行会在可执行文件目录下自动创建 `data/`，用于存放 `hmi.db`、`project.ini`、`channels.json`
 - 若程序目录不可写（例如安装到 `Program Files`），`project.ini` 会退化到系统配置目录
 - 程序为单实例运行，重复启动会提示「程序已在运行」
